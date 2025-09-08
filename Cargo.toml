@@ -1,0 +1,14 @@
+[package]
+name = "nifa"
+version = "0.0.1"
+edition = "2024"
+authors = ["shellrow <shellrow@foctal.com>"]
+description = "[WIP] Cross-platform CLI tool for network interface"
+repository = "https://github.com/shellrow/nifa"
+readme = "README.md"
+keywords = ["network"]
+categories = ["network-programming"]
+license = "MIT"
+
+[dependencies]
+netdev = "0.37"
