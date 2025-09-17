@@ -13,4 +13,14 @@ categories = ["network-programming"]
 license = "MIT"
 
 [dependencies]
-netdev = "0.37"
+anyhow = { version = "1" }
+tracing = { version = "0.1" }
+tracing-subscriber = { version = "0.3", features = ["time", "chrono"] }
+serde = { version = "1", features = ["derive"] }
+netdev = { version = "0.37", features = ["serde"] }
+serde_json = { version = "1" }
+serde_yaml = { version = "0.9" }
+clap = { version = "4.5", features = ["derive", "cargo"] }
+termtree = { version = "0.5" }
+home = { version = "0.5" }
+ndb-oui = { version = "0.3", features = ["bundled"] }
