@@ -10,7 +10,8 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use humansize::{format_size, BINARY};
-use ratatui::widgets::Paragraph;
+use ratatui::text::Text;
+use ratatui::widgets::{Paragraph, Wrap};
 use ratatui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -118,6 +119,7 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
     let mut next_tick = Instant::now();
     let mut selected: usize = 0;
     let mut popup_open = false;
+    let mut popup_scroll: u16 = 0;
 
     // Main loop
     let res = (|| -> Result<()> {
@@ -141,16 +143,21 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                         if let Some(ref name) = target_iface { ifs.retain(|it| &it.name == name); }
                         prev.clear();
                     },
-                    Event::Key(KeyEvent { code: KeyCode::Up, .. }) 
-                    | Event::Key(KeyEvent { code: KeyCode::Char('w'), .. }) => {
+                    Event::Key(KeyEvent { code: KeyCode::Up, .. }) | Event::Key(KeyEvent { code: KeyCode::Char('w'), .. }) if !popup_open => {
                         if selected > 0 { selected -= 1; }
                     },
-                    Event::Key(KeyEvent { code: KeyCode::Down, .. }) 
-                    | Event::Key(KeyEvent { code: KeyCode::Char('s'), .. }) => {
+                    Event::Key(KeyEvent { code: KeyCode::Down, .. }) | Event::Key(KeyEvent { code: KeyCode::Char('s'), .. }) if !popup_open => {
                         if selected + 1 < rows_cache.len() { selected += 1; }
+                    },
+                    Event::Key(KeyEvent { code: KeyCode::Up, .. }) | Event::Key(KeyEvent { code: KeyCode::Char('w'), .. }) if popup_open => { 
+                        popup_scroll = popup_scroll.saturating_sub(1); 
+                    },
+                    Event::Key(KeyEvent { code: KeyCode::Down, .. }) | Event::Key(KeyEvent { code: KeyCode::Char('s'), .. }) if popup_open => { 
+                        popup_scroll = popup_scroll.saturating_add(1); 
                     },
                     Event::Key(KeyEvent { code: KeyCode::Enter, .. }) => {
                         popup_open = true;
+                        popup_scroll = 0;
                     },
                     Event::Key(KeyEvent { code: KeyCode::Esc, .. }) => {
                         popup_open = false;
@@ -276,7 +283,8 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                 f.render_widget(table, chunks[0]);
 
                 // Help
-                let help = "Press <q> to quit | <o> cycle sort | <r> rescan interfaces | \u{2191}\u{2193}/w/s select | Enter details | CTRL+C to exit";
+                //let help = "Press <q> to quit | <o> cycle sort | <r> rescan interfaces | \u{2191}\u{2193}/w/s select | Enter details | CTRL+C to exit";
+                let help = "Press <q> to quit | <o> cycle sort | <r> rescan interfaces | ↑/↓/w/s select | Enter details | (modal) ↑/↓ scroll | CTRL+C to exit";
                 let help_span = Span::styled(help, Style::default().fg(ratatui::style::Color::DarkGray));
                 let help_row = Row::new(vec![help_span]);
                 let help_table = Table::new(
@@ -290,17 +298,37 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                     let sel_if_index = &rows_cache[selected].index;
                     if let Some(iface) = ifs.iter().find(|it| &it.index == sel_if_index) {
                         let area = centered_rect(66, 60, size);
-                        //f.render_widget(Block::default().style(Style::default().bg(Color::Black)), size);
+
+                        // Background fill (black)
+                        // f.render_widget(Block::default().style(Style::default().bg(Color::Black)), size);
+
+                        // Clear the area first
                         f.render_widget(Clear, area);
-                        
-                        let detail_text = iface_to_text(iface);
 
                         let block = Block::default()
-                            .title(format!("Details: {} (Esc to close)", iface.name))
+                            .title(format!("Details: {} (Esc to close — ↑/↓/w/s scroll)", iface.name))
                             .borders(Borders::ALL)
                             .style(Style::default().bg(Color::Black));
 
-                        let paragraph = Paragraph::new(detail_text).block(block);
+                        let inner = block.inner(area);
+
+                        // Detail text (tree string created by termtree)
+                        let detail_text = iface_to_text(iface);
+
+                        // Estimate content height (based on line breaks)
+                        let content_lines = detail_text.lines().count() as u16;
+                        // Visible lines in the popup
+                        let visible_lines = inner.height;
+
+                        // Clamp to scroll limit
+                        let max_scroll = content_lines.saturating_sub(visible_lines).saturating_add(2);
+                        if popup_scroll > max_scroll { popup_scroll = max_scroll; }
+
+                        let paragraph = Paragraph::new(Text::raw(detail_text))
+                            .block(block)
+                            .wrap(Wrap { trim: false })   
+                            .scroll((popup_scroll, 0));
+
                         f.render_widget(paragraph, area);
                     }
                 }
