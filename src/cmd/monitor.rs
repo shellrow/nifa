@@ -10,18 +10,21 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use humansize::{format_size, BINARY};
+use ratatui::widgets::Paragraph;
 use ratatui::{
     backend::CrosstermBackend,
-    layout::{Constraint, Direction, Layout},
-    style::{Style, Modifier},
+    layout::{Constraint, Direction, Layout, Rect},
+    style::{Style, Modifier, Color},
     text::Span,
-    widgets::{Block, Borders, Row, Table},
+    widgets::{Block, Borders, Row, Table, Clear},
     Terminal,
 };
+use termtree::Tree;
 
 use crate::cli::Cli;
 use crate::collector::iface::collect_all_interfaces;
 use crate::cli::MonitorArgs;
+use crate::renderer::tree::{fmt_bps, fmt_flags, tree_label};
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
 pub enum SortKey { 
@@ -71,6 +74,7 @@ struct Rate {
 
 #[derive(Debug)]
 struct RowData {
+    index: u32,
     name: String,
     total: u64,
     total_tx: u64,
@@ -112,6 +116,8 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
     }
     let mut rows_cache: Vec<RowData> = Vec::new();
     let mut next_tick = Instant::now();
+    let mut selected: usize = 0;
+    let mut popup_open = false;
 
     // Main loop
     let res = (|| -> Result<()> {
@@ -129,12 +135,26 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                 match event::read()? {
                     Event::Key(KeyEvent { code: KeyCode::Char('q'), .. }) => return Ok(()),
                     Event::Key(KeyEvent { code: KeyCode::Char('c'), modifiers, .. }) if modifiers.contains(KeyModifiers::CONTROL) => return Ok(()),
-                    Event::Key(KeyEvent { code: KeyCode::Char('s'), .. }) => sort = sort.cycle(),
+                    Event::Key(KeyEvent { code: KeyCode::Char('o'), .. }) => sort = sort.cycle(),
                     Event::Key(KeyEvent { code: KeyCode::Char('r'), .. }) => {
                         ifs = collect_all_interfaces();
                         if let Some(ref name) = target_iface { ifs.retain(|it| &it.name == name); }
                         prev.clear();
-                    }
+                    },
+                    Event::Key(KeyEvent { code: KeyCode::Up, .. }) 
+                    | Event::Key(KeyEvent { code: KeyCode::Char('w'), .. }) => {
+                        if selected > 0 { selected -= 1; }
+                    },
+                    Event::Key(KeyEvent { code: KeyCode::Down, .. }) 
+                    | Event::Key(KeyEvent { code: KeyCode::Char('s'), .. }) => {
+                        if selected + 1 < rows_cache.len() { selected += 1; }
+                    },
+                    Event::Key(KeyEvent { code: KeyCode::Enter, .. }) => {
+                        popup_open = true;
+                    },
+                    Event::Key(KeyEvent { code: KeyCode::Esc, .. }) => {
+                        popup_open = false;
+                    },
                     _ => {}
                 }
             }
@@ -172,6 +192,7 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                         prev.insert(key.clone(), nowp);
 
                         rows.push(RowData {
+                            index: itf.index,
                             name: itf.name.clone(),
                             total_rx: st.rx_bytes,
                             total_tx: st.tx_bytes,
@@ -191,6 +212,9 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                     SortKey::Tx => rows.sort_by(|a,b| b.tx.total_cmp(&a.tx)),
                 }
                 rows_cache = rows;
+                if !rows_cache.is_empty() {
+                    if selected >= rows_cache.len() { selected = rows_cache.len() - 1; }
+                }
             }
 
             // Draw using rows_cache at all times (maintain "previous value" when not tick)
@@ -199,21 +223,12 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                 let chunks = Layout::default()
                     .direction(Direction::Vertical)
                     .constraints([
-                        //Constraint::Length(3), 
                         Constraint::Min(3),
                         Constraint::Length(1)
                         ].as_ref())
                     .split(size);
 
                 // Header
-                /* let hdr = Block::default().borders(Borders::ALL).title(format!(
-                    "nifa monitor — sort:{:?} — interval:{}s {}",
-                    sort,
-                    args.interval,
-                    target_iface.as_deref().unwrap_or("(all)")
-                )); */
-                //f.render_widget(hdr, chunks[0]);
-
                 let unit_label = match args.unit { Unit::Bytes => "bytes", Unit::Bits => "bits" };
                 let title = format!(
                     "nifa monitor — sort:{:?} — unit:{} — interval:{}s {}",
@@ -229,15 +244,20 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                     Span::styled("TX/s", Style::default().add_modifier(Modifier::BOLD)),
                 ]);
 
-                let rows_iter = rows_cache.iter().map(|r| {
-                    Row::new(vec![
+                let rows_iter = rows_cache.iter().enumerate().map(|(i, r)| {
+                    let base = Row::new(vec![
                         Span::raw(&r.name),
                         Span::raw(human_total(r.total, args.unit)),
                         Span::raw(human_total(r.total_rx, args.unit)),
                         Span::raw(human_total(r.total_tx, args.unit)),
                         Span::raw(human_rate(r.rx, args.unit)),
                         Span::raw(human_rate(r.tx, args.unit)),
-                    ])
+                    ]);
+                    if i == selected {
+                        base.style(Style::default().bg(ratatui::style::Color::DarkGray))
+                    } else {
+                        base
+                    }
                 });
 
                 // Table
@@ -256,7 +276,7 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                 f.render_widget(table, chunks[0]);
 
                 // Help
-                let help = "Press <q> to quit | <s> cycle sort | <r> rescan interfaces | CTRL+C to exit";
+                let help = "Press <q> to quit | <o> cycle sort | <r> rescan interfaces | \u{2191}\u{2193}/w/s select | Enter details | CTRL+C to exit";
                 let help_span = Span::styled(help, Style::default().fg(ratatui::style::Color::DarkGray));
                 let help_row = Row::new(vec![help_span]);
                 let help_table = Table::new(
@@ -264,6 +284,26 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                     [Constraint::Percentage(100)]
                 );
                 f.render_widget(help_table, chunks[1]);
+
+                // Modal popup
+                if popup_open && !ifs.is_empty() && selected < ifs.len() {
+                    let sel_if_index = &rows_cache[selected].index;
+                    if let Some(iface) = ifs.iter().find(|it| &it.index == sel_if_index) {
+                        let area = centered_rect(66, 60, size);
+                        //f.render_widget(Block::default().style(Style::default().bg(Color::Black)), size);
+                        f.render_widget(Clear, area);
+                        
+                        let detail_text = iface_to_text(iface);
+
+                        let block = Block::default()
+                            .title(format!("Details: {} (Esc to close)", iface.name))
+                            .borders(Borders::ALL)
+                            .style(Style::default().bg(Color::Black));
+
+                        let paragraph = Paragraph::new(detail_text).block(block);
+                        f.render_widget(paragraph, area);
+                    }
+                }
 
             })?;
         }
@@ -322,4 +362,118 @@ fn human_rate(v: f64, unit: Unit) -> String {
             }
         }
     }
+}
+
+fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+    let popup_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage((100 - percent_y) / 2),
+            Constraint::Percentage(percent_y),
+            Constraint::Percentage((100 - percent_y) / 2),
+        ])
+        .split(r);
+    let area = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage((100 - percent_x) / 2),
+            Constraint::Percentage(percent_x),
+            Constraint::Percentage((100 - percent_x) / 2),
+        ])
+        .split(popup_layout[1]);
+    area[1]
+}
+
+fn iface_to_text(iface: &netdev::Interface) -> String {
+    let host = crate::collector::sys::hostname();
+    let title = format!(
+        "{}{} on {}",
+        iface.name,
+        if iface.default { " (default)" } else { "" },
+        host
+    );
+    let mut root = Tree::new(tree_label(title));
+
+    // flat fields (no General section)
+    root.push(Tree::new(format!("Index: {}", iface.index)));
+
+    if let Some(fn_name) = &iface.friendly_name {
+        root.push(Tree::new(format!("Friendly Name: {}", fn_name)));
+    }
+    if let Some(desc) = &iface.description {
+        root.push(Tree::new(format!("Description: {}", desc)));
+    }
+
+    root.push(Tree::new(format!("Type: {:?}", iface.if_type)));
+    root.push(Tree::new(format!("State: {:?}", iface.oper_state)));
+
+    if let Some(mac) = &iface.mac_addr {
+        root.push(Tree::new(format!("MAC: {}", mac)));
+    }
+    if let Some(mtu) = iface.mtu {
+        root.push(Tree::new(format!("MTU: {}", mtu)));
+    }
+
+    // link speeds (humanized bps)
+    if iface.transmit_speed.is_some() || iface.receive_speed.is_some() {
+        let mut speed = Tree::new(tree_label("Link Speed"));
+        if let Some(tx) = iface.transmit_speed { speed.push(Tree::new(format!("TX: {}", fmt_bps(tx)))); }
+        if let Some(rx) = iface.receive_speed { speed.push(Tree::new(format!("RX: {}", fmt_bps(rx)))); }
+        root.push(speed);
+    }
+
+    // flags
+    root.push(Tree::new(format!("Flags: {}", fmt_flags(iface.flags))));
+
+    // ---- Addresses ----
+    if !iface.ipv4.is_empty() {
+        let mut ipv4_tree = Tree::new(tree_label("IPv4"));
+        for net in &iface.ipv4 { ipv4_tree.push(Tree::new(net.to_string())); }
+        root.push(ipv4_tree);
+    }
+
+    if !iface.ipv6.is_empty() {
+        let mut ipv6_tree = Tree::new(tree_label("IPv6"));
+        for (i, net) in iface.ipv6.iter().enumerate() {
+            let mut label = net.to_string();
+            if let Some(scope) = iface.ipv6_scope_ids.get(i) { label.push_str(&format!(" (scope_id={})", scope)); }
+            ipv6_tree.push(Tree::new(label));
+        }
+        root.push(ipv6_tree);
+    }
+
+    // ---- DNS ----
+    if !iface.dns_servers.is_empty() {
+        let mut dns_tree = Tree::new(tree_label("DNS"));
+        for dns in &iface.dns_servers { dns_tree.push(Tree::new(dns.to_string())); }
+        root.push(dns_tree);
+    }
+
+    // ---- Gateway ----
+    if let Some(gw) = &iface.gateway {
+        let mut gw_node = Tree::new(tree_label("Gateway"));
+        gw_node.push(Tree::new(format!("MAC: {}", gw.mac_addr)));
+        if !gw.ipv4.is_empty() {
+            let mut gw4 = Tree::new(tree_label("IPv4"));
+            for ip in &gw.ipv4 { gw4.push(Tree::new(ip.to_string())); }
+            gw_node.push(gw4);
+        }
+        if !gw.ipv6.is_empty() {
+            let mut gw6 = Tree::new(tree_label("IPv6"));
+            for ip in &gw.ipv6 { gw6.push(Tree::new(ip.to_string())); }
+            gw_node.push(gw6);
+        }
+        root.push(gw_node);
+    }
+
+    // ---- Statistics (snapshot) ----
+    if let Some(st) = &iface.stats {
+        let mut stats_node = Tree::new(tree_label("Statistics (snapshot)"));
+        stats_node.push(Tree::new(format!("RX bytes: {}", st.rx_bytes)));
+        stats_node.push(Tree::new(format!("TX bytes: {}", st.tx_bytes)));
+        root.push(stats_node);
+    }
+
+    //println!("{}", root);
+    format!("{}", root)
 }

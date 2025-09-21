@@ -4,11 +4,11 @@ use netdev::Interface;
 use crate::collector::sys::SysInfo;
 
 /// Convert a string into a tree label.
-fn tree_label<S: Into<String>>(s: S) -> String {
+pub fn tree_label<S: Into<String>>(s: S) -> String {
     s.into()
 }
 
-fn fmt_bps(bps: u64) -> String {
+pub fn fmt_bps(bps: u64) -> String {
     const K: f64 = 1_000.0;
     let b = bps as f64;
     if b >= K * K * K { format!("{:.2} Gb/s", b / (K*K*K)) }
@@ -17,7 +17,7 @@ fn fmt_bps(bps: u64) -> String {
     else { format!("{} b/s", bps) }
 }
 
-fn fmt_flags(flags: u32) -> String {
+pub fn fmt_flags(flags: u32) -> String {
     format!("0x{:08X}", flags)
 }
 
