@@ -4,9 +4,9 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 
 use crate::cmd::monitor::{SortKey, Unit};
 
-/// nifa - Cross-platform Network Information Tool
+/// nifa - Cross-platform CLI tool for network information
 #[derive(Debug, Parser)]
-#[command(name = "nifa", author, version, about = "nifa - Cross-platform Network Information Tool", long_about = None)]
+#[command(name = "nifa", author, version, about = "nifa - Cross-platform CLI tool for network information", long_about = None)]
 pub struct Cli {
     /// Show only default interface
     #[arg(short, long)]
