@@ -15,6 +15,10 @@ pub struct Cli {
     /// Output format
     #[arg(short='f', long, value_enum, default_value_t = OutputFormat::Tree)]
     pub format: OutputFormat,
+
+    /// With vendor info (OUI lookup)
+    #[arg(long, default_value_t = false)]
+    pub with_vendor: bool,
     
     /// Subcommand
     #[command(subcommand)]

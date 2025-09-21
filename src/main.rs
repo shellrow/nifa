@@ -5,12 +5,17 @@ mod collector;
 mod renderer;
 mod cmd;
 mod model;
+mod db;
 
 use cli::{Cli, Command};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
+
+    if cli.with_vendor {
+        db::oui::init_oui_db()?;
+    }
 
     match &cli.command {
         None => {

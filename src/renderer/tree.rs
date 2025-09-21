@@ -1,7 +1,7 @@
 use termtree::Tree;
 use netdev::Interface;
 
-use crate::{collector::sys::SysInfo, model::ipinfo::PublicOut};
+use crate::{collector::sys::SysInfo, db::oui::is_oui_db_initialized, model::ipinfo::PublicOut};
 
 /// Convert a string into a tree label.
 pub fn tree_label<S: Into<String>>(s: S) -> String {
@@ -55,6 +55,17 @@ pub fn print_interface_tree(ifaces: &[Interface]) {
         if let Some(mac) = &iface.mac_addr {
             node.push(Tree::new(format!("MAC: {}", mac)));
         }
+
+        if is_oui_db_initialized() {
+            let oui_db = crate::db::oui::oui_db();
+            if let Some(mac) = &iface.mac_addr {
+                if let Some(vendor) = oui_db.lookup_mac(mac) {
+                    let vendor_name = vendor.vendor_detail.as_deref().unwrap_or(&vendor.vendor);
+                    node.push(Tree::new(format!("Vendor: {}", vendor_name)));
+                }
+            }
+        }
+
         if let Some(mtu) = iface.mtu {
             node.push(Tree::new(format!("MTU: {}", mtu)));
         }
@@ -141,6 +152,17 @@ pub fn print_interface_detail_tree(iface: &Interface) {
     if let Some(mac) = &iface.mac_addr {
         root.push(Tree::new(format!("MAC: {}", mac)));
     }
+
+    if is_oui_db_initialized() {
+        let oui_db = crate::db::oui::oui_db();
+        if let Some(mac) = &iface.mac_addr {
+            if let Some(vendor) = oui_db.lookup_mac(mac) {
+                let vendor_name = vendor.vendor_detail.as_deref().unwrap_or(&vendor.vendor);
+                root.push(Tree::new(format!("Vendor: {}", vendor_name)));
+            }
+        }
+    }
+
     if let Some(mtu) = iface.mtu {
         root.push(Tree::new(format!("MTU: {}", mtu)));
     }
@@ -238,6 +260,17 @@ pub fn print_system_with_default_iface(sys: &SysInfo, default_iface: Option<Inte
         if let Some(mac) = &iface.mac_addr {
             if_node.push(Tree::new(tree_label(format!("MAC: {}", mac))));
         }
+
+        if is_oui_db_initialized() {
+            let oui_db = crate::db::oui::oui_db();
+            if let Some(mac) = &iface.mac_addr {
+                if let Some(vendor) = oui_db.lookup_mac(mac) {
+                    let vendor_name = vendor.vendor_detail.as_deref().unwrap_or(&vendor.vendor);
+                    if_node.push(Tree::new(format!("Vendor: {}", vendor_name)));
+                }
+            }
+        }
+
         if let Some(mtu) = iface.mtu {
             if_node.push(Tree::new(tree_label(format!("MTU: {}", mtu))));
         }

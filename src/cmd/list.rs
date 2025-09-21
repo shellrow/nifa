@@ -48,9 +48,7 @@ pub fn list_interfaces(cli: &Cli, args: &ListArgs) {
     // Render output
     match cli.format {
         crate::cli::OutputFormat::Tree => renderer::tree::print_interface_tree(&interfaces),
-        //crate::cli::OutputFormat::Table => renderer::table::print_interface_table(&interfaces),
-        //crate::cli::OutputFormat::Json => renderer::json::print_interface_json(&interfaces),
-        //crate::cli::OutputFormat::Yaml => renderer::yaml::print_interface_yaml(&interfaces),
-        _ => unimplemented!("Currently only tree format is implemented for list command"),
+        crate::cli::OutputFormat::Json => renderer::json::print_interface_json(&interfaces),
+        crate::cli::OutputFormat::Yaml => renderer::yaml::print_interface_yaml(&interfaces),
     }
 }
