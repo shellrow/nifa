@@ -1,5 +1,5 @@
 use termtree::Tree;
-use netdev::Interface;
+use netdev::{Interface, MacAddr};
 
 use crate::{collector::sys::SysInfo, db::oui::is_oui_db_initialized, model::ipinfo::PublicOut};
 
@@ -54,11 +54,9 @@ pub fn print_interface_tree(ifaces: &[Interface]) {
         node.push(Tree::new(format!("State: {:?}", iface.oper_state)));
         if let Some(mac) = &iface.mac_addr {
             node.push(Tree::new(format!("MAC: {}", mac)));
-        }
 
-        if is_oui_db_initialized() {
-            let oui_db = crate::db::oui::oui_db();
-            if let Some(mac) = &iface.mac_addr {
+            if is_oui_db_initialized() && *mac != MacAddr::zero() {
+                let oui_db = crate::db::oui::oui_db();
                 if let Some(vendor) = oui_db.lookup_mac(mac) {
                     let vendor_name = vendor.vendor_detail.as_deref().unwrap_or(&vendor.vendor);
                     node.push(Tree::new(format!("Vendor: {}", vendor_name)));
@@ -151,11 +149,9 @@ pub fn print_interface_detail_tree(iface: &Interface) {
 
     if let Some(mac) = &iface.mac_addr {
         root.push(Tree::new(format!("MAC: {}", mac)));
-    }
 
-    if is_oui_db_initialized() {
-        let oui_db = crate::db::oui::oui_db();
-        if let Some(mac) = &iface.mac_addr {
+        if is_oui_db_initialized() && *mac != MacAddr::zero() {
+            let oui_db = crate::db::oui::oui_db();
             if let Some(vendor) = oui_db.lookup_mac(mac) {
                 let vendor_name = vendor.vendor_detail.as_deref().unwrap_or(&vendor.vendor);
                 root.push(Tree::new(format!("Vendor: {}", vendor_name)));
@@ -259,11 +255,9 @@ pub fn print_system_with_default_iface(sys: &SysInfo, default_iface: Option<Inte
         if_node.push(Tree::new(tree_label(format!("State: {:?}", iface.oper_state))));
         if let Some(mac) = &iface.mac_addr {
             if_node.push(Tree::new(tree_label(format!("MAC: {}", mac))));
-        }
 
-        if is_oui_db_initialized() {
-            let oui_db = crate::db::oui::oui_db();
-            if let Some(mac) = &iface.mac_addr {
+            if is_oui_db_initialized() && *mac != MacAddr::zero() {
+                let oui_db = crate::db::oui::oui_db();
                 if let Some(vendor) = oui_db.lookup_mac(mac) {
                     let vendor_name = vendor.vendor_detail.as_deref().unwrap_or(&vendor.vendor);
                     if_node.push(Tree::new(format!("Vendor: {}", vendor_name)));
