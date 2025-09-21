@@ -4,6 +4,7 @@ mod cli;
 mod collector; 
 mod renderer;
 mod cmd;
+mod model;
 
 use cli::{Cli, Command};
 
@@ -20,17 +21,14 @@ fn main() -> Result<()> {
         Some(Command::Show(args)) => {
             cmd::show::show_interface(&cli, args);
         },
-        Some(Command::Route) => {
-
-        },
         Some(Command::Os) => {
-
+            cmd::os::show_system_net_stack(&cli);
         },
-        Some(Command::Export(_args)) => {
-
+        Some(Command::Export(args)) => {
+            cmd::export::export_snapshot(&cli, args)?;
         },
-        Some(Command::Monitor(_args)) => {
-
+        Some(Command::Monitor(args)) => {
+            cmd::monitor::monitor_interfaces(&cli, args)?;
         },
     };
     Ok(())

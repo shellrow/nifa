@@ -14,10 +14,8 @@ pub fn show_interfaces(cli: &Cli) {
     // Render output
     match cli.format {
         crate::cli::OutputFormat::Tree => renderer::tree::print_interface_tree(&interfaces),
-        //crate::cli::OutputFormat::Table => renderer::table::print_interface_table(&interfaces),
-        //crate::cli::OutputFormat::Json => renderer::json::print_interface_json(&interfaces),
-        //crate::cli::OutputFormat::Yaml => renderer::yaml::print_interface_yaml(&interfaces),
-        _ => unimplemented!("Currently only tree format is implemented for list command"),
+        crate::cli::OutputFormat::Json => renderer::json::print_interface_json(&interfaces),
+        crate::cli::OutputFormat::Yaml => renderer::yaml::print_interface_yaml(&interfaces),
     }
 }
 
@@ -39,6 +37,12 @@ pub fn list_interfaces(cli: &Cli, args: &ListArgs) {
     }
     if args.virt {
         interfaces.retain(|iface| !iface.is_physical());
+    }
+    if args.has_ipv4 {
+        interfaces.retain(|iface| !iface.ipv4.is_empty());
+    }
+    if args.has_ipv6 {
+        interfaces.retain(|iface| !iface.ipv6.is_empty());
     }
 
     // Render output

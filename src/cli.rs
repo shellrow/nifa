@@ -2,6 +2,8 @@ use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
+use crate::cmd::monitor::{SortKey, Unit};
+
 /// nifa - Cross-platform Network Information Tool
 #[derive(Debug, Parser)]
 #[command(name = "nifa", author, version, about = "nifa - Cross-platform Network Information Tool", long_about = None)]
@@ -22,7 +24,6 @@ pub struct Cli {
 #[derive(Debug, Clone, Copy, ValueEnum)]
 pub enum OutputFormat { 
     Tree, 
-    Table, 
     Json, 
     Yaml 
 }
@@ -33,8 +34,6 @@ pub enum Command {
     List(ListArgs),
     /// Show details for specified interface
     Show(ShowArgs),
-    /// Show routing table
-    Route,
     /// Monitor traffic statistics for all interfaces
     Monitor(MonitorArgs),
     /// Show OS/network stack/permission information
@@ -84,11 +83,14 @@ pub struct MonitorArgs {
     #[arg(short, long)]
     pub iface: Option<String>,
     /// Sort key
-    #[arg(short='s', long, default_value="total", value_parser=["rx","tx","total"])]
-    pub sort: String,
+    #[arg(short='s', long, value_enum, default_value_t=SortKey::Total)]
+    pub sort: SortKey,
     /// Monitor interval in seconds
     #[arg(short='d', long, default_value="1")]
     pub interval: u64,
+    /// Display unit (bytes or bits)
+    #[arg(long, value_enum, default_value_t=Unit::Bytes)]
+    pub unit: Unit,
 }
 
 /// Export command arguments
