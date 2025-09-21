@@ -40,6 +40,8 @@ pub enum Command {
     Os,
     /// Export snapshot as JSON/YAML
     Export(ExportArgs),
+    /// Show public IP information
+    Public(PublicArgs),
 }
 
 /// List command arguments
@@ -99,4 +101,14 @@ pub struct ExportArgs {
     /// Output file
     #[arg(short, long)]
     pub output: Option<PathBuf>,
+}
+
+#[derive(Args, Debug)]
+pub struct PublicArgs {
+    /// IPv4 only
+    #[arg(long)]
+    pub v4_only: bool,
+    /// Timeout seconds
+    #[arg(long, default_value_t=3)]
+    pub timeout: u64,
 }

@@ -1,7 +1,7 @@
 use termtree::Tree;
 use netdev::Interface;
 
-use crate::collector::sys::SysInfo;
+use crate::{collector::sys::SysInfo, model::ipinfo::PublicOut};
 
 /// Convert a string into a tree label.
 pub fn tree_label<S: Into<String>>(s: S) -> String {
@@ -308,6 +308,63 @@ pub fn print_system_with_default_iface(sys: &SysInfo, default_iface: Option<Inte
         root.push(if_node);
     } else {
         root.push(Tree::new(tree_label("Default Interface: (not found)")));
+    }
+
+    println!("{}", root);
+}
+
+pub fn print_public_ip_tree(out: &PublicOut) {
+    let host = crate::collector::sys::hostname();
+    let mut root = Tree::new(tree_label(format!("Public IPs on {}", host)));
+
+    let mut v4node = Tree::new(tree_label("IPv4"));
+    if let Some(i) = &out.ipv4 {
+        v4node.push(Tree::new(tree_label(format!("IP: {}", i.ip_addr))));
+        //v4node.push(Tree::new(tree_label(format!("Decimal: {}", i.ip_addr_dec))));
+        //v4node.push(Tree::new(tree_label(format!("Host: {}", i.host_name))));
+        v4node.push(Tree::new(tree_label(format!("Network: {}", i.network))));
+        if out.common.is_none() {
+            if let Some(asn) = &i.asn { v4node.push(Tree::new(tree_label(format!("ASN: {}", asn)))); }
+            if let Some(n) = &i.as_name { v4node.push(Tree::new(tree_label(format!("AS Name: {}", n)))); }
+            if let Some(cc) = &i.country_code { 
+                let cn = i.country_name.as_deref().unwrap_or("");
+                v4node.push(Tree::new(tree_label(format!("Country: {} ({})", cn, cc))));
+            }
+        }
+    } else {
+        v4node.push(Tree::new(tree_label("(none)")));
+    }
+    root.push(v4node);
+
+    let mut v6node = Tree::new(tree_label("IPv6"));
+    if let Some(i) = &out.ipv6 {
+        v6node.push(Tree::new(tree_label(format!("IP: {}", i.ip_addr))));
+        //v6node.push(Tree::new(tree_label(format!("Decimal: {}", i.ip_addr_dec))));
+        //v6node.push(Tree::new(tree_label(format!("Host: {}", i.host_name))));
+        v6node.push(Tree::new(tree_label(format!("Network: {}", i.network))));
+        if out.common.is_none() {
+            if let Some(asn) = &i.asn { v6node.push(Tree::new(tree_label(format!("ASN: {}", asn)))); }
+            if let Some(n) = &i.as_name { v6node.push(Tree::new(tree_label(format!("AS Name: {}", n)))); }
+            if let Some(cc) = &i.country_code { 
+                let cn = i.country_name.as_deref().unwrap_or("");
+                v6node.push(Tree::new(tree_label(format!("Country: {} ({})", cn, cc))));
+            }
+        }
+    } else {
+        v6node.push(Tree::new(tree_label("(none)")));
+    }
+    root.push(v6node);
+
+    if let Some(c) = &out.common {
+        let mut country_info = Tree::new(tree_label("Country"));
+        country_info.push(Tree::new(tree_label(format!("Code: {}", c.country_code))));
+        country_info.push(Tree::new(tree_label(format!("Name: {}", c.country_name))));
+        root.push(country_info);
+
+        let mut as_info = Tree::new(tree_label("AS Info"));
+        as_info.push(Tree::new(tree_label(format!("ASN: {}", c.asn))));
+        as_info.push(Tree::new(tree_label(format!("AS Name: {}", c.as_name))));
+        root.push(as_info);
     }
 
     println!("{}", root);

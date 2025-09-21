@@ -8,7 +8,8 @@ mod model;
 
 use cli::{Cli, Command};
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match &cli.command {
@@ -30,6 +31,9 @@ fn main() -> Result<()> {
         Some(Command::Monitor(args)) => {
             cmd::monitor::monitor_interfaces(&cli, args)?;
         },
+        Some(Command::Public(args)) => {
+            cmd::public::show_public_ip_info(&cli, args).await?;
+        }
     };
     Ok(())
 }
