@@ -78,6 +78,7 @@ struct Rate {
 struct RowData {
     index: u32,
     name: String,
+    friendly_name: Option<String>,
     total: u64,
     total_tx: u64,
     total_rx: u64,
@@ -104,6 +105,8 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
     if let Some(ref name) = target_iface {
         ifs.retain(|it| &it.name == name);
     }
+
+    let max_name_len = get_max_if_name_len(&ifs);
 
     let mut prev: HashMap<String, StatPoint> = HashMap::new();
     for itf in &mut ifs {
@@ -206,6 +209,7 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                         rows.push(RowData {
                             index: itf.index,
                             name: itf.name.clone(),
+                            friendly_name: itf.friendly_name.clone(),
                             total_rx: st.rx_bytes,
                             total_tx: st.tx_bytes,
                             total: st.rx_bytes + st.tx_bytes,
@@ -258,7 +262,7 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
 
                 let rows_iter = rows_cache.iter().enumerate().map(|(i, r)| {
                     let base = Row::new(vec![
-                        Span::raw(&r.name),
+                        Span::raw(platform_if_name(r)),
                         Span::raw(human_total(r.total, args.unit)),
                         Span::raw(human_total(r.total_rx, args.unit)),
                         Span::raw(human_total(r.total_tx, args.unit)),
@@ -274,7 +278,7 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
 
                 // Table
                 let table = Table::new(rows_iter, [
-                        Constraint::Length(18),
+                        Constraint::Length(max_name_len),
                         Constraint::Length(14),
                         Constraint::Length(14),
                         Constraint::Length(14),
@@ -349,6 +353,38 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
 
     // Return result of main loop
     res
+}
+
+/// Get the maximum interface name length for table column width
+/// On Windows, consider friendly_name if available
+fn get_max_if_name_len(ifs: &[netdev::Interface]) -> u16 {
+    let max_len: usize =if cfg!(windows) {
+        ifs.iter().map(|it| {
+            if let Some(fn_name) = &it.friendly_name {
+                fn_name.len().max(it.name.len())
+            } else {
+                it.name.len()
+            }
+        }).max().unwrap_or(0)
+    } else {
+        ifs.iter().map(|it| it.name.len()).max().unwrap_or(0)
+    };
+    (max_len as u16).max(5)
+}
+
+/// Platform-specific interface name specification
+/// Linux/Unix: use `name` as-is
+/// Windows: use `friendly_name` if available; otherwise, use `name`
+fn platform_if_name(row: &RowData) -> &str {
+    if cfg!(windows) {
+        if let Some(friendly_name) = &row.friendly_name {
+            friendly_name
+        } else {
+            &row.name
+        }
+    } else {
+        &row.name
+    }
 }
 
 // Total (Bytes or Bits)
