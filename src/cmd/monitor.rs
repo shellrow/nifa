@@ -4,8 +4,9 @@ use std::time::{Duration, Instant};
 
 use anyhow::Result;
 use clap::ValueEnum;
+use crossterm::event::KeyEventKind;
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEvent, KeyModifiers},
+    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -134,35 +135,39 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
 
             // Input processing (wait for the remaining time. If tick comes, exit with false)
             if event::poll(remain)? {
-                match event::read()? {
-                    Event::Key(KeyEvent { code: KeyCode::Char('q'), .. }) => return Ok(()),
-                    Event::Key(KeyEvent { code: KeyCode::Char('c'), modifiers, .. }) if modifiers.contains(KeyModifiers::CONTROL) => return Ok(()),
-                    Event::Key(KeyEvent { code: KeyCode::Char('o'), .. }) => sort = sort.cycle(),
-                    Event::Key(KeyEvent { code: KeyCode::Char('r'), .. }) => {
-                        ifs = collect_all_interfaces();
-                        if let Some(ref name) = target_iface { ifs.retain(|it| &it.name == name); }
-                        prev.clear();
-                    },
-                    Event::Key(KeyEvent { code: KeyCode::Up, .. }) | Event::Key(KeyEvent { code: KeyCode::Char('w'), .. }) if !popup_open => {
-                        if selected > 0 { selected -= 1; }
-                    },
-                    Event::Key(KeyEvent { code: KeyCode::Down, .. }) | Event::Key(KeyEvent { code: KeyCode::Char('s'), .. }) if !popup_open => {
-                        if selected + 1 < rows_cache.len() { selected += 1; }
-                    },
-                    Event::Key(KeyEvent { code: KeyCode::Up, .. }) | Event::Key(KeyEvent { code: KeyCode::Char('w'), .. }) if popup_open => { 
-                        popup_scroll = popup_scroll.saturating_sub(1); 
-                    },
-                    Event::Key(KeyEvent { code: KeyCode::Down, .. }) | Event::Key(KeyEvent { code: KeyCode::Char('s'), .. }) if popup_open => { 
-                        popup_scroll = popup_scroll.saturating_add(1); 
-                    },
-                    Event::Key(KeyEvent { code: KeyCode::Enter, .. }) => {
-                        popup_open = true;
-                        popup_scroll = 0;
-                    },
-                    Event::Key(KeyEvent { code: KeyCode::Esc, .. }) => {
-                        popup_open = false;
-                    },
-                    _ => {}
+                if let Event::Key(key) = event::read()? {
+                    if key.kind == KeyEventKind::Press {
+                        match key.code {
+                            KeyCode::Char('q') => return Ok(()),
+                            KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => return Ok(()),
+                            KeyCode::Char('o') => sort = sort.cycle(),
+                            KeyCode::Char('r') => {
+                                ifs = collect_all_interfaces();
+                                if let Some(ref name) = target_iface { ifs.retain(|it| &it.name == name); }
+                                prev.clear();
+                            },
+                            KeyCode::Up | KeyCode::Char('w') if !popup_open => {
+                                if selected > 0 { selected -= 1; }
+                            },
+                            KeyCode::Down | KeyCode::Char('s') if !popup_open => {
+                                if selected + 1 < rows_cache.len() { selected += 1; }
+                            },
+                            KeyCode::Up | KeyCode::Char('w') if popup_open => { 
+                                popup_scroll = popup_scroll.saturating_sub(1); 
+                            },
+                            KeyCode::Down | KeyCode::Char('s') if popup_open => { 
+                                popup_scroll = popup_scroll.saturating_add(1); 
+                            },
+                            KeyCode::Enter => {
+                                popup_open = true;
+                                popup_scroll = 0;
+                            },
+                            KeyCode::Esc => {
+                                popup_open = false;
+                            },
+                            _ => {}
+                        }
+                    }
                 }
             }
 
@@ -283,8 +288,7 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                 f.render_widget(table, chunks[0]);
 
                 // Help
-                //let help = "Press <q> to quit | <o> cycle sort | <r> rescan interfaces | \u{2191}\u{2193}/w/s select | Enter details | CTRL+C to exit";
-                let help = "Press <q> to quit | <o> cycle sort | <r> rescan interfaces | ↑/↓/w/s select | Enter details | (modal) ↑/↓ scroll | CTRL+C to exit";
+                let help = "Press <q> to quit | <o> cycle sort | <r> rescan interfaces | ↑/↓/w/s select | Enter details | CTRL+C to exit";
                 let help_span = Span::styled(help, Style::default().fg(ratatui::style::Color::DarkGray));
                 let help_row = Row::new(vec![help_span]);
                 let help_table = Table::new(
