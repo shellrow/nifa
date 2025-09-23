@@ -951,6 +951,7 @@ dependencies = [
  "crossterm",
  "hostname",
  "humansize",
+ "libc",
  "ndb-oui",
  "netdev",
  "os_info",
@@ -963,6 +964,7 @@ dependencies = [
  "tokio",
  "tracing",
  "url",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]

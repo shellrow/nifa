@@ -272,6 +272,9 @@ pub fn print_system_with_default_iface(sys: &SysInfo, default_iface: Option<Inte
         "Version: {}",
         sys.os_version
     ))));
+    if let Some(kv) = &sys.kernel_version {
+        sys_node.push(Tree::new(tree_label(format!("Kernel: {}", kv))));
+    }
     sys_node.push(Tree::new(tree_label(format!("Edition: {}", sys.edition))));
     sys_node.push(Tree::new(tree_label(format!("Codename: {}", sys.codename))));
     sys_node.push(Tree::new(tree_label(format!("Bitness: {}", sys.bitness))));
