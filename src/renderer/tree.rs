@@ -137,6 +137,18 @@ pub fn print_interface_tree(ifaces: &[Interface]) {
             node.push(gw_node);
         }
 
+        if iface.default {
+            let vpn_heuristic = crate::collector::iface::detect_vpn_like(&iface);
+            if vpn_heuristic.is_vpn_like {
+                let mut heuristic_node = Tree::new(tree_label("Heuristic"));
+                heuristic_node.push(Tree::new(format!(
+                    "VPN-like: {}",
+                    vpn_heuristic.is_vpn_like
+                )));
+                node.push(heuristic_node);
+            }
+        }
+
         root.push(node);
     }
     println!("{}", root);
@@ -254,6 +266,16 @@ pub fn print_interface_detail_tree(iface: &Interface) {
         stats_node.push(Tree::new(format!("RX bytes: {}", st.rx_bytes)));
         stats_node.push(Tree::new(format!("TX bytes: {}", st.tx_bytes)));
         root.push(stats_node);
+    }
+
+    let vpn_heuristic = crate::collector::iface::detect_vpn_like(&iface);
+    if vpn_heuristic.is_vpn_like {
+        let mut heuristic_node = Tree::new(tree_label("Heuristic"));
+        heuristic_node.push(Tree::new(format!(
+            "VPN-like: {}",
+            vpn_heuristic.is_vpn_like
+        )));
+        root.push(heuristic_node);
     }
 
     println!("{}", root);
@@ -431,6 +453,16 @@ pub fn print_system_with_default_iface(sys: &SysInfo, default_iface: Option<Inte
             if_node.push(gw_node);
         }
 
+        let vpn_heuristic = crate::collector::iface::detect_vpn_like(&iface);
+        if vpn_heuristic.is_vpn_like {
+            let mut heuristic_node = Tree::new(tree_label("Heuristic"));
+            heuristic_node.push(Tree::new(format!(
+                "VPN-like: {}",
+                vpn_heuristic.is_vpn_like
+            )));
+            if_node.push(heuristic_node);
+        }
+
         root.push(if_node);
     } else {
         root.push(Tree::new(tree_label("Default Interface: (not found)")));
@@ -439,7 +471,7 @@ pub fn print_system_with_default_iface(sys: &SysInfo, default_iface: Option<Inte
     println!("{}", root);
 }
 
-pub fn print_public_ip_tree(out: &PublicOut) {
+pub fn print_public_ip_tree(out: &PublicOut, default_iface: Option<Interface>) {
     let host = crate::collector::sys::hostname();
     let mut root = Tree::new(tree_label(format!("Public IPs on {}", host)));
 
@@ -499,6 +531,117 @@ pub fn print_public_ip_tree(out: &PublicOut) {
         as_info.push(Tree::new(tree_label(format!("ASN: {}", c.asn))));
         as_info.push(Tree::new(tree_label(format!("AS Name: {}", c.as_name))));
         root.push(as_info);
+    }
+
+    // ---- Default Interface (optional) ----
+    if let Some(iface) = default_iface {
+        let mut if_node = Tree::new(tree_label(format!("Default Interface: {}", iface.name)));
+
+        if let Some(fn_name) = &iface.friendly_name {
+            if_node.push(Tree::new(tree_label(format!("Friendly Name: {}", fn_name))));
+        }
+        if let Some(desc) = &iface.description {
+            if_node.push(Tree::new(tree_label(format!("Description: {}", desc))));
+        }
+
+        if_node.push(Tree::new(tree_label(format!("Index: {}", iface.index))));
+        if_node.push(Tree::new(tree_label(format!("Type: {:?}", iface.if_type))));
+        if_node.push(Tree::new(tree_label(format!(
+            "State: {:?}",
+            iface.oper_state
+        ))));
+        if let Some(mac) = &iface.mac_addr {
+            if_node.push(Tree::new(tree_label(format!("MAC: {}", mac))));
+
+            if is_oui_db_initialized() && *mac != MacAddr::zero() {
+                let oui_db = crate::db::oui::oui_db();
+                if let Some(vendor) = oui_db.lookup_mac(mac) {
+                    let vendor_name = vendor.vendor_detail.as_deref().unwrap_or(&vendor.vendor);
+                    if_node.push(Tree::new(format!("Vendor: {}", vendor_name)));
+                }
+            }
+        }
+
+        if let Some(mtu) = iface.mtu {
+            if_node.push(Tree::new(tree_label(format!("MTU: {}", mtu))));
+        }
+
+        // Speeds
+        if iface.transmit_speed.is_some() || iface.receive_speed.is_some() {
+            let mut speed = Tree::new(tree_label("Link Speed"));
+            if let Some(tx) = iface.transmit_speed {
+                speed.push(Tree::new(tree_label(format!("TX: {}", fmt_bps(tx)))));
+            }
+            if let Some(rx) = iface.receive_speed {
+                speed.push(Tree::new(tree_label(format!("RX: {}", fmt_bps(rx)))));
+            }
+            if_node.push(speed);
+        }
+
+        // IPv4
+        if !iface.ipv4.is_empty() {
+            let mut ipv4_node = Tree::new(tree_label("IPv4"));
+            for n in &iface.ipv4 {
+                ipv4_node.push(Tree::new(tree_label(n.to_string())));
+            }
+            if_node.push(ipv4_node);
+        }
+        // IPv6 with scope ID
+        if !iface.ipv6.is_empty() {
+            let mut ipv6_node = Tree::new(tree_label("IPv6"));
+            for (i, n) in iface.ipv6.iter().enumerate() {
+                let mut label = n.to_string();
+                if let Some(sc) = iface.ipv6_scope_ids.get(i) {
+                    label.push_str(&format!(" (scope_id={})", sc));
+                }
+                ipv6_node.push(Tree::new(tree_label(label)));
+            }
+            if_node.push(ipv6_node);
+        }
+
+        // DNS
+        if !iface.dns_servers.is_empty() {
+            let mut dns = Tree::new(tree_label("DNS"));
+            for s in &iface.dns_servers {
+                dns.push(Tree::new(tree_label(s.to_string())));
+            }
+            if_node.push(dns);
+        }
+
+        // Gateway (IP + MAC)
+        if let Some(gw) = &iface.gateway {
+            let mut gw_node = Tree::new(tree_label("Gateway"));
+            gw_node.push(Tree::new(tree_label(format!("MAC: {}", gw.mac_addr))));
+            if !gw.ipv4.is_empty() {
+                let mut gw4 = Tree::new(tree_label("IPv4"));
+                for ip in &gw.ipv4 {
+                    gw4.push(Tree::new(tree_label(ip.to_string())));
+                }
+                gw_node.push(gw4);
+            }
+            if !gw.ipv6.is_empty() {
+                let mut gw6 = Tree::new(tree_label("IPv6"));
+                for ip in &gw.ipv6 {
+                    gw6.push(Tree::new(tree_label(ip.to_string())));
+                }
+                gw_node.push(gw6);
+            }
+            if_node.push(gw_node);
+        }
+
+        let vpn_heuristic = crate::collector::iface::detect_vpn_like(&iface);
+        if vpn_heuristic.is_vpn_like {
+            let mut heuristic_node = Tree::new(tree_label("Heuristic"));
+            heuristic_node.push(Tree::new(format!(
+                "VPN-like: {}",
+                vpn_heuristic.is_vpn_like
+            )));
+            if_node.push(heuristic_node);
+        }
+
+        root.push(if_node);
+    } else {
+        root.push(Tree::new(tree_label("Default Interface: (not found)")));
     }
 
     println!("{}", root);
