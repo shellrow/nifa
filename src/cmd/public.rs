@@ -21,7 +21,7 @@ pub async fn show_public_ip_info(cli: &Cli, args: &PublicArgs) -> Result<()> {
     let v4: Option<IpInfo>;
     let mut v6: Option<IpInfo> = None;
 
-    if args.v4_only {
+    if args.ipv4 {
         v4 = fetch_ip(&client, IPSTRUCT_V4_URL).await?;
     } else {
         let (any_res, v4_res) = tokio::join!(
