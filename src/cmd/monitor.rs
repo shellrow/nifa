@@ -8,43 +8,43 @@ use crossterm::event::KeyEventKind;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
-use humansize::{format_size, BINARY};
+use humansize::{BINARY, format_size};
 use ratatui::text::Text;
 use ratatui::widgets::{Paragraph, Wrap};
 use ratatui::{
+    Terminal,
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout, Rect},
-    style::{Style, Modifier, Color},
+    style::{Color, Modifier, Style},
     text::Span,
-    widgets::{Block, Borders, Row, Table, Clear},
-    Terminal,
+    widgets::{Block, Borders, Clear, Row, Table},
 };
 use termtree::Tree;
 
 use crate::cli::Cli;
-use crate::collector::iface::collect_all_interfaces;
 use crate::cli::MonitorArgs;
+use crate::collector::iface::collect_all_interfaces;
 use crate::renderer::tree::{fmt_bps, fmt_flags, tree_label};
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
-pub enum SortKey { 
+pub enum SortKey {
     Total,
     TotalRx,
     TotalTx,
-    Rx, 
-    Tx
+    Rx,
+    Tx,
 }
 
 impl SortKey {
     fn cycle(self) -> Self {
-        match self { 
-            SortKey::Total => SortKey::TotalRx, 
+        match self {
+            SortKey::Total => SortKey::TotalRx,
             SortKey::TotalRx => SortKey::TotalTx,
             SortKey::TotalTx => SortKey::Rx,
-            SortKey::Rx => SortKey::Tx, 
-            SortKey::Tx => SortKey::Total, 
+            SortKey::Rx => SortKey::Tx,
+            SortKey::Tx => SortKey::Total,
         }
     }
 }
@@ -112,11 +112,14 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
     for itf in &mut ifs {
         let _ = itf.update_stats();
         if let Some(st) = &itf.stats {
-            prev.insert(itf.name.clone(), StatPoint {
-                rx_bytes: st.rx_bytes,
-                tx_bytes: st.tx_bytes,
-                ts: Instant::now(),
-            });
+            prev.insert(
+                itf.name.clone(),
+                StatPoint {
+                    rx_bytes: st.rx_bytes,
+                    tx_bytes: st.tx_bytes,
+                    ts: Instant::now(),
+                },
+            );
         }
     }
     let mut rows_cache: Vec<RowData> = Vec::new();
@@ -142,32 +145,40 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                     if key.kind == KeyEventKind::Press {
                         match key.code {
                             KeyCode::Char('q') => return Ok(()),
-                            KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => return Ok(()),
+                            KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                                return Ok(());
+                            }
                             KeyCode::Char('o') => sort = sort.cycle(),
                             KeyCode::Char('r') => {
                                 ifs = collect_all_interfaces();
-                                if let Some(ref name) = target_iface { ifs.retain(|it| &it.name == name); }
+                                if let Some(ref name) = target_iface {
+                                    ifs.retain(|it| &it.name == name);
+                                }
                                 prev.clear();
-                            },
+                            }
                             KeyCode::Up | KeyCode::Char('w') if !popup_open => {
-                                if selected > 0 { selected -= 1; }
-                            },
+                                if selected > 0 {
+                                    selected -= 1;
+                                }
+                            }
                             KeyCode::Down | KeyCode::Char('s') if !popup_open => {
-                                if selected + 1 < rows_cache.len() { selected += 1; }
-                            },
-                            KeyCode::Up | KeyCode::Char('w') if popup_open => { 
-                                popup_scroll = popup_scroll.saturating_sub(1); 
-                            },
-                            KeyCode::Down | KeyCode::Char('s') if popup_open => { 
-                                popup_scroll = popup_scroll.saturating_add(1); 
-                            },
+                                if selected + 1 < rows_cache.len() {
+                                    selected += 1;
+                                }
+                            }
+                            KeyCode::Up | KeyCode::Char('w') if popup_open => {
+                                popup_scroll = popup_scroll.saturating_sub(1);
+                            }
+                            KeyCode::Down | KeyCode::Char('s') if popup_open => {
+                                popup_scroll = popup_scroll.saturating_add(1);
+                            }
                             KeyCode::Enter => {
                                 popup_open = true;
                                 popup_scroll = 0;
-                            },
+                            }
                             KeyCode::Esc => {
                                 popup_open = false;
-                            },
+                            }
                             _ => {}
                         }
                     }
@@ -196,11 +207,16 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                         let rate = if let Some(prevp) = prev.get(&key) {
                             let dt = nowp.ts.duration_since(prevp.ts).as_secs_f64().max(0.001);
                             Rate {
-                                rx_per_s: (nowp.rx_bytes.saturating_sub(prevp.rx_bytes) as f64) / dt,
-                                tx_per_s: (nowp.tx_bytes.saturating_sub(prevp.tx_bytes) as f64) / dt,
+                                rx_per_s: (nowp.rx_bytes.saturating_sub(prevp.rx_bytes) as f64)
+                                    / dt,
+                                tx_per_s: (nowp.tx_bytes.saturating_sub(prevp.tx_bytes) as f64)
+                                    / dt,
                             }
                         } else {
-                            Rate { rx_per_s: 0.0, tx_per_s: 0.0 }
+                            Rate {
+                                rx_per_s: 0.0,
+                                tx_per_s: 0.0,
+                            }
                         };
 
                         // Update prev for next time (only on tick)
@@ -221,15 +237,17 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
 
                 // Sort and replace cache (only on tick)
                 match sort {
-                    SortKey::Total => rows.sort_by(|a,b| b.total.cmp(&a.total)),
-                    SortKey::TotalRx => rows.sort_by(|a,b| b.total_rx.cmp(&a.total_rx)),
-                    SortKey::TotalTx => rows.sort_by(|a,b| b.total_tx.cmp(&a.total_tx)),
-                    SortKey::Rx => rows.sort_by(|a,b| b.rx.total_cmp(&a.rx)),
-                    SortKey::Tx => rows.sort_by(|a,b| b.tx.total_cmp(&a.tx)),
+                    SortKey::Total => rows.sort_by(|a, b| b.total.cmp(&a.total)),
+                    SortKey::TotalRx => rows.sort_by(|a, b| b.total_rx.cmp(&a.total_rx)),
+                    SortKey::TotalTx => rows.sort_by(|a, b| b.total_tx.cmp(&a.total_tx)),
+                    SortKey::Rx => rows.sort_by(|a, b| b.rx.total_cmp(&a.rx)),
+                    SortKey::Tx => rows.sort_by(|a, b| b.tx.total_cmp(&a.tx)),
                 }
                 rows_cache = rows;
                 if !rows_cache.is_empty() {
-                    if selected >= rows_cache.len() { selected = rows_cache.len() - 1; }
+                    if selected >= rows_cache.len() {
+                        selected = rows_cache.len() - 1;
+                    }
                 }
             }
 
@@ -334,7 +352,7 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
 
                         let paragraph = Paragraph::new(Text::raw(detail_text))
                             .block(block)
-                            .wrap(Wrap { trim: false })   
+                            .wrap(Wrap { trim: false })
                             .scroll((popup_scroll, 0));
 
                         f.render_widget(paragraph, area);
@@ -358,14 +376,17 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
 /// Get the maximum interface name length for table column width
 /// On Windows, consider friendly_name if available
 fn get_max_if_name_len(ifs: &[netdev::Interface]) -> u16 {
-    let max_len: usize =if cfg!(windows) {
-        ifs.iter().map(|it| {
-            if let Some(fn_name) = &it.friendly_name {
-                fn_name.len().max(it.name.len())
-            } else {
-                it.name.len()
-            }
-        }).max().unwrap_or(0)
+    let max_len: usize = if cfg!(windows) {
+        ifs.iter()
+            .map(|it| {
+                if let Some(fn_name) = &it.friendly_name {
+                    fn_name.len().max(it.name.len())
+                } else {
+                    it.name.len()
+                }
+            })
+            .max()
+            .unwrap_or(0)
     } else {
         ifs.iter().map(|it| it.name.len()).max().unwrap_or(0)
     };
@@ -485,8 +506,12 @@ fn iface_to_text(iface: &netdev::Interface) -> String {
     // link speeds (humanized bps)
     if iface.transmit_speed.is_some() || iface.receive_speed.is_some() {
         let mut speed = Tree::new(tree_label("Link Speed"));
-        if let Some(tx) = iface.transmit_speed { speed.push(Tree::new(format!("TX: {}", fmt_bps(tx)))); }
-        if let Some(rx) = iface.receive_speed { speed.push(Tree::new(format!("RX: {}", fmt_bps(rx)))); }
+        if let Some(tx) = iface.transmit_speed {
+            speed.push(Tree::new(format!("TX: {}", fmt_bps(tx))));
+        }
+        if let Some(rx) = iface.receive_speed {
+            speed.push(Tree::new(format!("RX: {}", fmt_bps(rx))));
+        }
         root.push(speed);
     }
 
@@ -496,7 +521,9 @@ fn iface_to_text(iface: &netdev::Interface) -> String {
     // ---- Addresses ----
     if !iface.ipv4.is_empty() {
         let mut ipv4_tree = Tree::new(tree_label("IPv4"));
-        for net in &iface.ipv4 { ipv4_tree.push(Tree::new(net.to_string())); }
+        for net in &iface.ipv4 {
+            ipv4_tree.push(Tree::new(net.to_string()));
+        }
         root.push(ipv4_tree);
     }
 
@@ -504,7 +531,9 @@ fn iface_to_text(iface: &netdev::Interface) -> String {
         let mut ipv6_tree = Tree::new(tree_label("IPv6"));
         for (i, net) in iface.ipv6.iter().enumerate() {
             let mut label = net.to_string();
-            if let Some(scope) = iface.ipv6_scope_ids.get(i) { label.push_str(&format!(" (scope_id={})", scope)); }
+            if let Some(scope) = iface.ipv6_scope_ids.get(i) {
+                label.push_str(&format!(" (scope_id={})", scope));
+            }
             ipv6_tree.push(Tree::new(label));
         }
         root.push(ipv6_tree);
@@ -513,7 +542,9 @@ fn iface_to_text(iface: &netdev::Interface) -> String {
     // ---- DNS ----
     if !iface.dns_servers.is_empty() {
         let mut dns_tree = Tree::new(tree_label("DNS"));
-        for dns in &iface.dns_servers { dns_tree.push(Tree::new(dns.to_string())); }
+        for dns in &iface.dns_servers {
+            dns_tree.push(Tree::new(dns.to_string()));
+        }
         root.push(dns_tree);
     }
 
@@ -523,12 +554,16 @@ fn iface_to_text(iface: &netdev::Interface) -> String {
         gw_node.push(Tree::new(format!("MAC: {}", gw.mac_addr)));
         if !gw.ipv4.is_empty() {
             let mut gw4 = Tree::new(tree_label("IPv4"));
-            for ip in &gw.ipv4 { gw4.push(Tree::new(ip.to_string())); }
+            for ip in &gw.ipv4 {
+                gw4.push(Tree::new(ip.to_string()));
+            }
             gw_node.push(gw4);
         }
         if !gw.ipv6.is_empty() {
             let mut gw6 = Tree::new(tree_label("IPv6"));
-            for ip in &gw.ipv6 { gw6.push(Tree::new(ip.to_string())); }
+            for ip in &gw.ipv6 {
+                gw6.push(Tree::new(ip.to_string()));
+            }
             gw_node.push(gw6);
         }
         root.push(gw_node);

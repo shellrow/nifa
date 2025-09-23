@@ -17,7 +17,9 @@ pub fn export_snapshot(cli: &Cli, args: &ExportArgs) -> Result<()> {
         eprintln!("Exported {} bytes to {}", bytes.len(), path.display());
     } else {
         // if no output file, write to stdout
-        std::io::stdout().write_all(&bytes).context("write stdout")?;
+        std::io::stdout()
+            .write_all(&bytes)
+            .context("write stdout")?;
     }
     Ok(())
 }

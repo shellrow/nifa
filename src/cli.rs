@@ -19,17 +19,17 @@ pub struct Cli {
     /// With vendor info (OUI lookup)
     #[arg(long, default_value_t = false)]
     pub with_vendor: bool,
-    
+
     /// Subcommand
     #[command(subcommand)]
     pub command: Option<Command>,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
-pub enum OutputFormat { 
-    Tree, 
-    Json, 
-    Yaml 
+pub enum OutputFormat {
+    Tree,
+    Json,
+    Yaml,
 }
 
 #[derive(Debug, Subcommand)]
@@ -92,7 +92,7 @@ pub struct MonitorArgs {
     #[arg(short='s', long, value_enum, default_value_t=SortKey::Total)]
     pub sort: SortKey,
     /// Monitor interval in seconds
-    #[arg(short='d', long, default_value="1")]
+    #[arg(short = 'd', long, default_value = "1")]
     pub interval: u64,
     /// Display unit (bytes or bits)
     #[arg(long, value_enum, default_value_t=Unit::Bytes)]
@@ -113,6 +113,6 @@ pub struct PublicArgs {
     #[arg(long)]
     pub v4_only: bool,
     /// Timeout seconds
-    #[arg(long, default_value_t=3)]
+    #[arg(long, default_value_t = 3)]
     pub timeout: u64,
 }

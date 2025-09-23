@@ -1,13 +1,15 @@
-use netdev::Interface;
 use crate::cli::Cli;
 use crate::cli::ListArgs;
 use crate::collector;
 use crate::renderer;
+use netdev::Interface;
 
 /// Default action with no subcommand
 pub fn show_interfaces(cli: &Cli) {
     let interfaces: Vec<Interface> = if cli.default {
-        collector::iface::get_default_interface().into_iter().collect()
+        collector::iface::get_default_interface()
+            .into_iter()
+            .collect()
     } else {
         collector::iface::collect_all_interfaces()
     };

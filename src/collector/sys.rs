@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SysInfo {
@@ -23,9 +23,20 @@ pub fn system_info() -> SysInfo {
     let info = os_info::get();
     let os_type = info.os_type().to_string();
     let os_version = info.version().to_string();
-    let edition = info.edition().unwrap_or_else(|| "unknown".into()).to_string();
-    let codename = info.codename().unwrap_or_else(|| "unknown".into()).to_string();
-    let bitness = if cfg!(target_pointer_width = "64") { "64-bit" } else { "32-bit" }.into();
+    let edition = info
+        .edition()
+        .unwrap_or_else(|| "unknown".into())
+        .to_string();
+    let codename = info
+        .codename()
+        .unwrap_or_else(|| "unknown".into())
+        .to_string();
+    let bitness = if cfg!(target_pointer_width = "64") {
+        "64-bit"
+    } else {
+        "32-bit"
+    }
+    .into();
     let architecture = std::env::consts::ARCH.into();
 
     SysInfo {
