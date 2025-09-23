@@ -9,6 +9,15 @@ pub struct SysInfo {
     pub codename: String,
     pub bitness: String,
     pub architecture: String,
+    pub proxy: ProxyEnv,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProxyEnv {
+    pub http: Option<String>,
+    pub https: Option<String>,
+    pub all: Option<String>,
+    pub no_proxy: Option<String>,
 }
 
 pub fn hostname() -> String {
@@ -39,6 +48,8 @@ pub fn system_info() -> SysInfo {
     .into();
     let architecture = std::env::consts::ARCH.into();
 
+    let proxy = collect_proxy_env();
+
     SysInfo {
         hostname,
         os_type,
@@ -47,5 +58,24 @@ pub fn system_info() -> SysInfo {
         codename,
         bitness,
         architecture,
+        proxy,
+    }
+}
+
+/// Collect proxy environment variables
+pub fn collect_proxy_env() -> ProxyEnv {
+    // Prefer lowercase, fallback to uppercase
+    fn pick(key: &str) -> Option<String> {
+        std::env::var(key.to_lowercase())
+            .ok()
+            .or_else(|| std::env::var(key.to_uppercase()).ok())
+            .filter(|s| !s.trim().is_empty())
+    }
+
+    ProxyEnv {
+        http: pick("http_proxy"),
+        https: pick("https_proxy"),
+        all: pick("all_proxy"),
+        no_proxy: pick("no_proxy"),
     }
 }

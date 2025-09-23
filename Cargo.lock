@@ -962,6 +962,7 @@ dependencies = [
  "termtree",
  "tokio",
  "tracing",
+ "url",
 ]
 
 [[package]]

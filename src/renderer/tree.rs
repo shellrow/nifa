@@ -1,5 +1,6 @@
 use netdev::{Interface, MacAddr};
 use termtree::Tree;
+use url::Url;
 
 use crate::{collector::sys::SysInfo, db::oui::is_oui_db_initialized, model::ipinfo::PublicOut};
 
@@ -24,6 +25,19 @@ pub fn fmt_bps(bps: u64) -> String {
 
 pub fn fmt_flags(flags: u32) -> String {
     format!("0x{:08X}", flags)
+}
+
+/// Mask username/password in proxy URL for privacy
+fn mask_proxy_url(raw: &str) -> String {
+    if let Ok(mut url) = Url::parse(raw) {
+        if url.password().is_some() || !url.username().is_empty() {
+            let user = url.username().to_string();
+            let _ = url.set_username(&user).ok();
+            let _ = url.set_password(Some("*****")).ok();
+        }
+        return url.to_string();
+    }
+    raw.to_string()
 }
 
 /// Print the network interfaces in a tree structure.
@@ -265,6 +279,57 @@ pub fn print_system_with_default_iface(sys: &SysInfo, default_iface: Option<Inte
         "Architecture: {}",
         sys.architecture
     ))));
+
+    // ---- Proxy (env) ----
+    let px = crate::collector::sys::collect_proxy_env();
+    let mut px_node = Tree::new(tree_label("Proxy (env)"));
+    px_node.push(Tree::new(format!(
+        "HTTP_PROXY: {}",
+        px.http
+            .as_deref()
+            .map(mask_proxy_url)
+            .unwrap_or_else(|| "(none)".into())
+    )));
+    px_node.push(Tree::new(format!(
+        "HTTPS_PROXY: {}",
+        px.https
+            .as_deref()
+            .map(mask_proxy_url)
+            .unwrap_or_else(|| "(none)".into())
+    )));
+    px_node.push(Tree::new(format!(
+        "ALL_PROXY: {}",
+        px.all
+            .as_deref()
+            .map(mask_proxy_url)
+            .unwrap_or_else(|| "(none)".into())
+    )));
+    if let Some(np) = px.no_proxy.as_deref() {
+        let mut np_node = Tree::new(tree_label("NO_PROXY"));
+        // Split by comma and trim spaces, ignore empty parts
+        for (i, part) in np
+            .split(',')
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+            .enumerate()
+        {
+            // Limit to first 20 entries
+            if i < 20 {
+                np_node.push(Tree::new(part.to_string()));
+            } else {
+                np_node.push(Tree::new(format!(
+                    "(+{} more)",
+                    np.split(',').count().saturating_sub(20)
+                )));
+                break;
+            }
+        }
+        px_node.push(np_node);
+    } else {
+        px_node.push(Tree::new(tree_label("NO_PROXY: (none)")));
+    }
+    sys_node.push(px_node);
+
     root.push(sys_node);
 
     // ---- Default Interface (optional) ----
