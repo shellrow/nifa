@@ -1,6 +1,6 @@
 [package]
 name = "nifa"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 authors = ["shellrow <shellrow@foctal.com>"]
 description = "Cross-platform CLI tool for network information"
@@ -32,6 +32,12 @@ humansize = "2.1"
 url = "2.5"
 #tracing-subscriber = { version = "0.3", features = ["time", "chrono"] }
 #home = { version = "0.5" }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_System_SystemInformation", "Wdk_System_SystemServices"] }
 
 # The profile that 'dist' will build with
 [profile.dist]

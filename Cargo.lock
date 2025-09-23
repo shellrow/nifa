@@ -944,13 +944,14 @@ dependencies = [
 
 [[package]]
 name = "nifa"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "clap",
  "crossterm",
  "hostname",
  "humansize",
+ "libc",
  "ndb-oui",
  "netdev",
  "os_info",
@@ -963,6 +964,7 @@ dependencies = [
  "tokio",
  "tracing",
  "url",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
