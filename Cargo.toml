@@ -1,6 +1,6 @@
 [package]
 name = "nifa"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 authors = ["shellrow <shellrow@foctal.com>"]
 description = "Cross-platform CLI tool for network information"
@@ -15,7 +15,6 @@ license = "MIT"
 [dependencies]
 anyhow = { version = "1" }
 tracing = { version = "0.1" }
-tracing-subscriber = { version = "0.3", features = ["time", "chrono"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
 serde_yaml = { version = "0.9" }
@@ -24,10 +23,17 @@ tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "rustls-tls-native-roots"] }
 clap = { version = "4.5", features = ["derive", "cargo"] }
 termtree = { version = "0.5" }
-home = { version = "0.5" }
 hostname = { version = "0.4" }
 os_info = { version = "3.12" }
 ndb-oui = { version = "0.3", features = ["bundled"] }
 ratatui = "0.25"
 crossterm = "0.27"
 humansize = "2.1"
+url = "2.5"
+#tracing-subscriber = { version = "0.3", features = ["time", "chrono"] }
+#home = { version = "0.5" }
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto = "thin"

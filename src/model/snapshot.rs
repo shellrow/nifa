@@ -1,5 +1,5 @@
 use netdev::Interface;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::collector::sys::SysInfo;
 

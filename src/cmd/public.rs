@@ -21,7 +21,7 @@ pub async fn show_public_ip_info(cli: &Cli, args: &PublicArgs) -> Result<()> {
     let v4: Option<IpInfo>;
     let mut v6: Option<IpInfo> = None;
 
-    if args.v4_only {
+    if args.ipv4 {
         v4 = fetch_ip(&client, IPSTRUCT_V4_URL).await?;
     } else {
         let (any_res, v4_res) = tokio::join!(
@@ -58,7 +58,11 @@ pub async fn show_public_ip_info(cli: &Cli, args: &PublicArgs) -> Result<()> {
 
 /// Fetch IP information from a given URL
 async fn fetch_ip(client: &Client, url: &str) -> Result<Option<IpInfo>> {
-    let resp = client.get(url).send().await.with_context(|| format!("GET {}", url))?;
+    let resp = client
+        .get(url)
+        .send()
+        .await
+        .with_context(|| format!("GET {}", url))?;
     if !resp.status().is_success() {
         anyhow::bail!("{} -> HTTP {}", url, resp.status());
     }
@@ -101,10 +105,10 @@ fn build_public_out(v4: Option<IpInfo>, v6: Option<IpInfo>) -> PublicOut {
     let v4i = v4.as_ref().unwrap();
     let v6i = v6.as_ref().unwrap();
 
-    let same_asn        = v4i.asn == v6i.asn;
-    let same_as_name    = v4i.as_name == v6i.as_name;
-    let same_cc         = v4i.country_code == v6i.country_code;
-    let same_country    = v4i.country_name == v6i.country_name;
+    let same_asn = v4i.asn == v6i.asn;
+    let same_as_name = v4i.as_name == v6i.as_name;
+    let same_cc = v4i.country_code == v6i.country_code;
+    let same_country = v4i.country_name == v6i.country_name;
 
     // If all fields are the same, we can commonize
     if same_asn && same_as_name && same_cc && same_country {
@@ -120,14 +124,20 @@ fn build_public_out(v4: Option<IpInfo>, v6: Option<IpInfo>) -> PublicOut {
                 ip_addr_dec: v4i.ip_addr_dec.clone(),
                 host_name: v4i.host_name.clone(),
                 network: v4i.network.clone(),
-                asn: None, as_name: None, country_code: None, country_name: None,
+                asn: None,
+                as_name: None,
+                country_code: None,
+                country_name: None,
             }),
             ipv6: Some(IpSide {
                 ip_addr: v6i.ip_addr.clone(),
                 ip_addr_dec: v6i.ip_addr_dec.clone(),
                 host_name: v6i.host_name.clone(),
                 network: v6i.network.clone(),
-                asn: None, as_name: None, country_code: None, country_name: None,
+                asn: None,
+                as_name: None,
+                country_code: None,
+                country_name: None,
             }),
         }
     } else {

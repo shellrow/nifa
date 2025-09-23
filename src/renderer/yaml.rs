@@ -1,5 +1,5 @@
-use netdev::Interface;
 use crate::{collector::sys::SysInfo, model::snapshot::Snapshot};
+use netdev::Interface;
 
 pub fn print_interface_yaml(ifaces: &[Interface]) {
     let yaml = serde_yaml::to_string(ifaces).unwrap();

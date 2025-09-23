@@ -1,5 +1,6 @@
-use termtree::Tree;
 use netdev::{Interface, MacAddr};
+use termtree::Tree;
+use url::Url;
 
 use crate::{collector::sys::SysInfo, db::oui::is_oui_db_initialized, model::ipinfo::PublicOut};
 
@@ -11,14 +12,32 @@ pub fn tree_label<S: Into<String>>(s: S) -> String {
 pub fn fmt_bps(bps: u64) -> String {
     const K: f64 = 1_000.0;
     let b = bps as f64;
-    if b >= K * K * K { format!("{:.2} Gb/s", b / (K*K*K)) }
-    else if b >= K * K { format!("{:.2} Mb/s", b / (K*K)) }
-    else if b >= K { format!("{:.2} Kb/s", b / K) }
-    else { format!("{} b/s", bps) }
+    if b >= K * K * K {
+        format!("{:.2} Gb/s", b / (K * K * K))
+    } else if b >= K * K {
+        format!("{:.2} Mb/s", b / (K * K))
+    } else if b >= K {
+        format!("{:.2} Kb/s", b / K)
+    } else {
+        format!("{} b/s", bps)
+    }
 }
 
 pub fn fmt_flags(flags: u32) -> String {
     format!("0x{:08X}", flags)
+}
+
+/// Mask username/password in proxy URL for privacy
+fn mask_proxy_url(raw: &str) -> String {
+    if let Ok(mut url) = Url::parse(raw) {
+        if url.password().is_some() || !url.username().is_empty() {
+            let user = url.username().to_string();
+            let _ = url.set_username(&user).ok();
+            let _ = url.set_password(Some("*****")).ok();
+        }
+        return url.to_string();
+    }
+    raw.to_string()
 }
 
 /// Print the network interfaces in a tree structure.
@@ -40,7 +59,7 @@ pub fn print_interface_tree(ifaces: &[Interface]) {
             iface.name,
             if iface.default { " (default)" } else { "" }
         ));
-        
+
         node.push(Tree::new(format!("Index: {}", iface.index)));
 
         if let Some(fn_name) = &iface.friendly_name {
@@ -166,8 +185,12 @@ pub fn print_interface_detail_tree(iface: &Interface) {
     // link speeds (humanized bps)
     if iface.transmit_speed.is_some() || iface.receive_speed.is_some() {
         let mut speed = Tree::new(tree_label("Link Speed"));
-        if let Some(tx) = iface.transmit_speed { speed.push(Tree::new(format!("TX: {}", fmt_bps(tx)))); }
-        if let Some(rx) = iface.receive_speed { speed.push(Tree::new(format!("RX: {}", fmt_bps(rx)))); }
+        if let Some(tx) = iface.transmit_speed {
+            speed.push(Tree::new(format!("TX: {}", fmt_bps(tx))));
+        }
+        if let Some(rx) = iface.receive_speed {
+            speed.push(Tree::new(format!("RX: {}", fmt_bps(rx))));
+        }
         root.push(speed);
     }
 
@@ -177,7 +200,9 @@ pub fn print_interface_detail_tree(iface: &Interface) {
     // ---- Addresses ----
     if !iface.ipv4.is_empty() {
         let mut ipv4_tree = Tree::new(tree_label("IPv4"));
-        for net in &iface.ipv4 { ipv4_tree.push(Tree::new(net.to_string())); }
+        for net in &iface.ipv4 {
+            ipv4_tree.push(Tree::new(net.to_string()));
+        }
         root.push(ipv4_tree);
     }
 
@@ -185,7 +210,9 @@ pub fn print_interface_detail_tree(iface: &Interface) {
         let mut ipv6_tree = Tree::new(tree_label("IPv6"));
         for (i, net) in iface.ipv6.iter().enumerate() {
             let mut label = net.to_string();
-            if let Some(scope) = iface.ipv6_scope_ids.get(i) { label.push_str(&format!(" (scope_id={})", scope)); }
+            if let Some(scope) = iface.ipv6_scope_ids.get(i) {
+                label.push_str(&format!(" (scope_id={})", scope));
+            }
             ipv6_tree.push(Tree::new(label));
         }
         root.push(ipv6_tree);
@@ -194,7 +221,9 @@ pub fn print_interface_detail_tree(iface: &Interface) {
     // ---- DNS ----
     if !iface.dns_servers.is_empty() {
         let mut dns_tree = Tree::new(tree_label("DNS"));
-        for dns in &iface.dns_servers { dns_tree.push(Tree::new(dns.to_string())); }
+        for dns in &iface.dns_servers {
+            dns_tree.push(Tree::new(dns.to_string()));
+        }
         root.push(dns_tree);
     }
 
@@ -204,12 +233,16 @@ pub fn print_interface_detail_tree(iface: &Interface) {
         gw_node.push(Tree::new(format!("MAC: {}", gw.mac_addr)));
         if !gw.ipv4.is_empty() {
             let mut gw4 = Tree::new(tree_label("IPv4"));
-            for ip in &gw.ipv4 { gw4.push(Tree::new(ip.to_string())); }
+            for ip in &gw.ipv4 {
+                gw4.push(Tree::new(ip.to_string()));
+            }
             gw_node.push(gw4);
         }
         if !gw.ipv6.is_empty() {
             let mut gw6 = Tree::new(tree_label("IPv6"));
-            for ip in &gw.ipv6 { gw6.push(Tree::new(ip.to_string())); }
+            for ip in &gw.ipv6 {
+                gw6.push(Tree::new(ip.to_string()));
+            }
             gw_node.push(gw6);
         }
         root.push(gw_node);
@@ -227,16 +260,76 @@ pub fn print_interface_detail_tree(iface: &Interface) {
 }
 
 pub fn print_system_with_default_iface(sys: &SysInfo, default_iface: Option<Interface>) {
-    let mut root = Tree::new(tree_label(format!("System Information on {}", sys.hostname)));
+    let mut root = Tree::new(tree_label(format!(
+        "System Information on {}",
+        sys.hostname
+    )));
 
     // ---- System ----
     let mut sys_node = Tree::new(tree_label("System"));
     sys_node.push(Tree::new(tree_label(format!("OS Type: {}", sys.os_type))));
-    sys_node.push(Tree::new(tree_label(format!("Version: {}", sys.os_version))));
+    sys_node.push(Tree::new(tree_label(format!(
+        "Version: {}",
+        sys.os_version
+    ))));
     sys_node.push(Tree::new(tree_label(format!("Edition: {}", sys.edition))));
     sys_node.push(Tree::new(tree_label(format!("Codename: {}", sys.codename))));
     sys_node.push(Tree::new(tree_label(format!("Bitness: {}", sys.bitness))));
-    sys_node.push(Tree::new(tree_label(format!("Architecture: {}", sys.architecture))));
+    sys_node.push(Tree::new(tree_label(format!(
+        "Architecture: {}",
+        sys.architecture
+    ))));
+
+    // ---- Proxy (env) ----
+    let px = crate::collector::sys::collect_proxy_env();
+    let mut px_node = Tree::new(tree_label("Proxy (env)"));
+    px_node.push(Tree::new(format!(
+        "HTTP_PROXY: {}",
+        px.http
+            .as_deref()
+            .map(mask_proxy_url)
+            .unwrap_or_else(|| "(none)".into())
+    )));
+    px_node.push(Tree::new(format!(
+        "HTTPS_PROXY: {}",
+        px.https
+            .as_deref()
+            .map(mask_proxy_url)
+            .unwrap_or_else(|| "(none)".into())
+    )));
+    px_node.push(Tree::new(format!(
+        "ALL_PROXY: {}",
+        px.all
+            .as_deref()
+            .map(mask_proxy_url)
+            .unwrap_or_else(|| "(none)".into())
+    )));
+    if let Some(np) = px.no_proxy.as_deref() {
+        let mut np_node = Tree::new(tree_label("NO_PROXY"));
+        // Split by comma and trim spaces, ignore empty parts
+        for (i, part) in np
+            .split(',')
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+            .enumerate()
+        {
+            // Limit to first 20 entries
+            if i < 20 {
+                np_node.push(Tree::new(part.to_string()));
+            } else {
+                np_node.push(Tree::new(format!(
+                    "(+{} more)",
+                    np.split(',').count().saturating_sub(20)
+                )));
+                break;
+            }
+        }
+        px_node.push(np_node);
+    } else {
+        px_node.push(Tree::new(tree_label("NO_PROXY: (none)")));
+    }
+    sys_node.push(px_node);
+
     root.push(sys_node);
 
     // ---- Default Interface (optional) ----
@@ -252,7 +345,10 @@ pub fn print_system_with_default_iface(sys: &SysInfo, default_iface: Option<Inte
 
         if_node.push(Tree::new(tree_label(format!("Index: {}", iface.index))));
         if_node.push(Tree::new(tree_label(format!("Type: {:?}", iface.if_type))));
-        if_node.push(Tree::new(tree_label(format!("State: {:?}", iface.oper_state))));
+        if_node.push(Tree::new(tree_label(format!(
+            "State: {:?}",
+            iface.oper_state
+        ))));
         if let Some(mac) = &iface.mac_addr {
             if_node.push(Tree::new(tree_label(format!("MAC: {}", mac))));
 
@@ -351,9 +447,13 @@ pub fn print_public_ip_tree(out: &PublicOut) {
         //v4node.push(Tree::new(tree_label(format!("Host: {}", i.host_name))));
         v4node.push(Tree::new(tree_label(format!("Network: {}", i.network))));
         if out.common.is_none() {
-            if let Some(asn) = &i.asn { v4node.push(Tree::new(tree_label(format!("ASN: {}", asn)))); }
-            if let Some(n) = &i.as_name { v4node.push(Tree::new(tree_label(format!("AS Name: {}", n)))); }
-            if let Some(cc) = &i.country_code { 
+            if let Some(asn) = &i.asn {
+                v4node.push(Tree::new(tree_label(format!("ASN: {}", asn))));
+            }
+            if let Some(n) = &i.as_name {
+                v4node.push(Tree::new(tree_label(format!("AS Name: {}", n))));
+            }
+            if let Some(cc) = &i.country_code {
                 let cn = i.country_name.as_deref().unwrap_or("");
                 v4node.push(Tree::new(tree_label(format!("Country: {} ({})", cn, cc))));
             }
@@ -370,9 +470,13 @@ pub fn print_public_ip_tree(out: &PublicOut) {
         //v6node.push(Tree::new(tree_label(format!("Host: {}", i.host_name))));
         v6node.push(Tree::new(tree_label(format!("Network: {}", i.network))));
         if out.common.is_none() {
-            if let Some(asn) = &i.asn { v6node.push(Tree::new(tree_label(format!("ASN: {}", asn)))); }
-            if let Some(n) = &i.as_name { v6node.push(Tree::new(tree_label(format!("AS Name: {}", n)))); }
-            if let Some(cc) = &i.country_code { 
+            if let Some(asn) = &i.asn {
+                v6node.push(Tree::new(tree_label(format!("ASN: {}", asn))));
+            }
+            if let Some(n) = &i.as_name {
+                v6node.push(Tree::new(tree_label(format!("AS Name: {}", n))));
+            }
+            if let Some(cc) = &i.country_code {
                 let cn = i.country_name.as_deref().unwrap_or("");
                 v6node.push(Tree::new(tree_label(format!("Country: {} ({})", cn, cc))));
             }

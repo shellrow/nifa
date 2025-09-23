@@ -1,5 +1,5 @@
-use netdev::Interface;
 use crate::{collector::sys::SysInfo, model::snapshot::Snapshot};
+use netdev::Interface;
 
 pub fn print_interface_json(ifaces: &[Interface]) {
     let json = serde_json::to_string_pretty(ifaces).unwrap();

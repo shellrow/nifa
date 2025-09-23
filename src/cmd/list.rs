@@ -1,13 +1,15 @@
-use netdev::Interface;
 use crate::cli::Cli;
 use crate::cli::ListArgs;
 use crate::collector;
 use crate::renderer;
+use netdev::Interface;
 
 /// Default action with no subcommand
 pub fn show_interfaces(cli: &Cli) {
     let interfaces: Vec<Interface> = if cli.default {
-        collector::iface::get_default_interface().into_iter().collect()
+        collector::iface::get_default_interface()
+            .into_iter()
+            .collect()
     } else {
         collector::iface::collect_all_interfaces()
     };
@@ -32,16 +34,16 @@ pub fn list_interfaces(cli: &Cli, args: &ListArgs) {
     if args.down {
         interfaces.retain(|iface| iface.oper_state == netdev::interface::OperState::Down);
     }
-    if args.physical {
+    if args.phy {
         interfaces.retain(|iface| iface.is_physical());
     }
     if args.virt {
         interfaces.retain(|iface| !iface.is_physical());
     }
-    if args.has_ipv4 {
+    if args.ipv4 {
         interfaces.retain(|iface| !iface.ipv4.is_empty());
     }
-    if args.has_ipv6 {
+    if args.ipv6 {
         interfaces.retain(|iface| !iface.ipv6.is_empty());
     }
 

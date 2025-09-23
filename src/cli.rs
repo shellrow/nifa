@@ -19,17 +19,17 @@ pub struct Cli {
     /// With vendor info (OUI lookup)
     #[arg(long, default_value_t = false)]
     pub with_vendor: bool,
-    
+
     /// Subcommand
     #[command(subcommand)]
     pub command: Option<Command>,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
-pub enum OutputFormat { 
-    Tree, 
-    Json, 
-    Yaml 
+pub enum OutputFormat {
+    Tree,
+    Json,
+    Yaml,
 }
 
 #[derive(Debug, Subcommand)]
@@ -62,23 +62,22 @@ pub struct ListArgs {
     pub down: bool,
     /// Show physical interfaces only
     #[arg(long, conflicts_with = "virt")]
-    pub physical: bool,
+    pub phy: bool,
     /// Show virtual interfaces only
     #[arg(long)]
     pub virt: bool,
     /// Show interfaces with IPv4 address only
     #[arg(long)]
-    pub has_ipv4: bool,
+    pub ipv4: bool,
     /// Show interfaces with IPv6 address only
     #[arg(long)]
-    pub has_ipv6: bool,
+    pub ipv6: bool,
 }
 
 /// Show command arguments
 #[derive(Args, Debug)]
 pub struct ShowArgs {
     /// Show details for specified interface
-    #[arg(short, long)]
     pub iface: String,
 }
 
@@ -92,7 +91,7 @@ pub struct MonitorArgs {
     #[arg(short='s', long, value_enum, default_value_t=SortKey::Total)]
     pub sort: SortKey,
     /// Monitor interval in seconds
-    #[arg(short='d', long, default_value="1")]
+    #[arg(short = 'd', long, default_value = "1")]
     pub interval: u64,
     /// Display unit (bytes or bits)
     #[arg(long, value_enum, default_value_t=Unit::Bytes)]
@@ -111,8 +110,8 @@ pub struct ExportArgs {
 pub struct PublicArgs {
     /// IPv4 only
     #[arg(long)]
-    pub v4_only: bool,
+    pub ipv4: bool,
     /// Timeout seconds
-    #[arg(long, default_value_t=3)]
+    #[arg(long, default_value_t = 3)]
     pub timeout: u64,
 }

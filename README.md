@@ -10,7 +10,7 @@ Cross-platform CLI tool for network information
 - Monitor live traffic statistics in TUI
 - Export snapshot in JSON or YAML for automation
 - Fetch your public IPv4/IPv6
-- Display system (OS) information along with default interface
+- Display system information along with default interface
 
 ## Supported Platforms
 - **Linux**

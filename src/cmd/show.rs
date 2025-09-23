@@ -9,13 +9,15 @@ pub fn show_interface(cli: &Cli, args: &ShowArgs) {
         Some(iface) => {
             // Render output
             match cli.format {
-                crate::cli::OutputFormat::Tree => renderer::tree::print_interface_detail_tree(&iface),
+                crate::cli::OutputFormat::Tree => {
+                    renderer::tree::print_interface_detail_tree(&iface)
+                }
                 crate::cli::OutputFormat::Json => renderer::json::print_interface_json(&[iface]),
                 crate::cli::OutputFormat::Yaml => renderer::yaml::print_interface_yaml(&[iface]),
             }
-        },
+        }
         None => {
             tracing::error!("Interface '{}' not found", args.iface);
         }
-    }    
+    }
 }
