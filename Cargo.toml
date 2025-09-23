@@ -1,6 +1,6 @@
 [package]
 name = "nifa"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 authors = ["shellrow <shellrow@foctal.com>"]
 description = "Cross-platform CLI tool for network information"
