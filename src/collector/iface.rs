@@ -1,5 +1,5 @@
 use netdev::Interface;
-use netdev::interface::InterfaceType;
+use netdev::interface::types::InterfaceType;
 
 /// Common patterns that indicate a VPN/tunnel adapter
 const VPN_NAME_PATTERNS: &[&str] = &[

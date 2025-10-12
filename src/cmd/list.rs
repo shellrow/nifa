@@ -3,6 +3,7 @@ use crate::cli::ListArgs;
 use crate::collector;
 use crate::renderer;
 use netdev::Interface;
+use netdev::interface::state::OperState;
 
 /// Default action with no subcommand
 pub fn show_interfaces(cli: &Cli) {
@@ -29,10 +30,10 @@ pub fn list_interfaces(cli: &Cli, args: &ListArgs) {
         interfaces.retain(|iface| iface.name.contains(name_like));
     }
     if args.up {
-        interfaces.retain(|iface| iface.oper_state == netdev::interface::OperState::Up);
+        interfaces.retain(|iface| iface.oper_state == OperState::Up);
     }
     if args.down {
-        interfaces.retain(|iface| iface.oper_state == netdev::interface::OperState::Down);
+        interfaces.retain(|iface| iface.oper_state == OperState::Down);
     }
     if args.phy {
         interfaces.retain(|iface| iface.is_physical());
