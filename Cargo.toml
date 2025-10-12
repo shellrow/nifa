@@ -1,6 +1,6 @@
 [package]
 name = "nifa"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2024"
 authors = ["shellrow <shellrow@foctal.com>"]
 description = "Cross-platform CLI tool for network information"
@@ -18,7 +18,7 @@ tracing = { version = "0.1" }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
 serde_yaml = { version = "0.9" }
-netdev = { version = "0.37", features = ["serde"] }
+netdev = { version = "0.38", features = ["serde"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "rustls-tls-native-roots"] }
 clap = { version = "4.5", features = ["derive", "cargo"] }
