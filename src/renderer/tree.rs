@@ -2,7 +2,7 @@ use netdev::{Interface, MacAddr};
 use termtree::Tree;
 use url::Url;
 
-use crate::{collector::sys::SysInfo, db::oui::is_oui_db_initialized, model::ipinfo::PublicOut};
+use crate::{net::sys::SysInfo, db::oui::is_oui_db_initialized, model::ipinfo::PublicOut};
 
 /// Convert a string into a tree label.
 pub fn tree_label<S: Into<String>>(s: S) -> String {
@@ -47,7 +47,7 @@ pub fn print_interface_tree(ifaces: &[Interface]) {
     } else {
         false
     };
-    let host = crate::collector::sys::hostname();
+    let host = crate::net::sys::hostname();
     let mut root = if default {
         Tree::new(tree_label(format!("Default Interface on {}", host)))
     } else {
@@ -138,7 +138,7 @@ pub fn print_interface_tree(ifaces: &[Interface]) {
         }
 
         if iface.default {
-            let vpn_heuristic = crate::collector::iface::detect_vpn_like(&iface);
+            let vpn_heuristic = crate::net::iface::detect_vpn_like(&iface);
             if vpn_heuristic.is_vpn_like {
                 let mut heuristic_node = Tree::new(tree_label("Heuristic"));
                 heuristic_node.push(Tree::new(format!(
@@ -156,7 +156,7 @@ pub fn print_interface_tree(ifaces: &[Interface]) {
 
 /// Print detailed information of a single interface in a tree structure.
 pub fn print_interface_detail_tree(iface: &Interface) {
-    let host = crate::collector::sys::hostname();
+    let host = crate::net::sys::hostname();
     let title = format!(
         "{}{} on {}",
         iface.name,
@@ -268,7 +268,7 @@ pub fn print_interface_detail_tree(iface: &Interface) {
         root.push(stats_node);
     }
 
-    let vpn_heuristic = crate::collector::iface::detect_vpn_like(&iface);
+    let vpn_heuristic = crate::net::iface::detect_vpn_like(&iface);
     if vpn_heuristic.is_vpn_like {
         let mut heuristic_node = Tree::new(tree_label("Heuristic"));
         heuristic_node.push(Tree::new(format!(
@@ -306,7 +306,7 @@ pub fn print_system_with_default_iface(sys: &SysInfo, default_iface: Option<Inte
     ))));
 
     // ---- Proxy (env) ----
-    let px = crate::collector::sys::collect_proxy_env();
+    let px = crate::net::sys::collect_proxy_env();
     let mut px_node = Tree::new(tree_label("Proxy (env)"));
     px_node.push(Tree::new(format!(
         "HTTP_PROXY: {}",
@@ -453,7 +453,7 @@ pub fn print_system_with_default_iface(sys: &SysInfo, default_iface: Option<Inte
             if_node.push(gw_node);
         }
 
-        let vpn_heuristic = crate::collector::iface::detect_vpn_like(&iface);
+        let vpn_heuristic = crate::net::iface::detect_vpn_like(&iface);
         if vpn_heuristic.is_vpn_like {
             let mut heuristic_node = Tree::new(tree_label("Heuristic"));
             heuristic_node.push(Tree::new(format!(
@@ -472,7 +472,7 @@ pub fn print_system_with_default_iface(sys: &SysInfo, default_iface: Option<Inte
 }
 
 pub fn print_public_ip_tree(out: &PublicOut, default_iface: Option<Interface>) {
-    let host = crate::collector::sys::hostname();
+    let host = crate::net::sys::hostname();
     let mut root = Tree::new(tree_label(format!("Public IPs on {}", host)));
 
     let mut v4node = Tree::new(tree_label("IPv4"));
@@ -629,7 +629,7 @@ pub fn print_public_ip_tree(out: &PublicOut, default_iface: Option<Interface>) {
             if_node.push(gw_node);
         }
 
-        let vpn_heuristic = crate::collector::iface::detect_vpn_like(&iface);
+        let vpn_heuristic = crate::net::iface::detect_vpn_like(&iface);
         if vpn_heuristic.is_vpn_like {
             let mut heuristic_node = Tree::new(tree_label("Heuristic"));
             heuristic_node.push(Tree::new(format!(

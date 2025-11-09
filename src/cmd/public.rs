@@ -48,7 +48,7 @@ pub async fn show_public_ip_info(cli: &Cli, args: &PublicArgs) -> Result<()> {
 
     let out = build_public_out(v4, v6);
 
-    let default_iface_opt = crate::collector::iface::get_default_interface();
+    let default_iface_opt = crate::net::iface::get_default_interface();
 
     match cli.format {
         OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&out)?),

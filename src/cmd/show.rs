@@ -1,11 +1,11 @@
 use crate::cli::Cli;
 use crate::cli::ShowArgs;
-use crate::collector;
+use crate::net;
 use crate::renderer;
 
 /// Show specified interface details
 pub fn show_interface(cli: &Cli, args: &ShowArgs) {
-    match collector::iface::get_interface_by_name(&args.iface) {
+    match net::iface::get_interface_by_name(&args.iface) {
         Some(iface) => {
             // Render output
             match cli.format {

@@ -1,4 +1,4 @@
-use crate::{collector::sys::SysInfo, model::snapshot::Snapshot};
+use crate::{net::sys::SysInfo, model::snapshot::Snapshot};
 use netdev::Interface;
 
 pub fn print_interface_yaml(ifaces: &[Interface]) {

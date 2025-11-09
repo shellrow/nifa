@@ -25,7 +25,7 @@ use termtree::Tree;
 
 use crate::cli::Cli;
 use crate::cli::MonitorArgs;
-use crate::collector::iface::collect_all_interfaces;
+use crate::net::iface::collect_all_interfaces;
 use crate::renderer::tree::{fmt_bps, fmt_flags, tree_label};
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -474,7 +474,7 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
 }
 
 fn iface_to_text(iface: &netdev::Interface) -> String {
-    let host = crate::collector::sys::hostname();
+    let host = crate::net::sys::hostname();
     let title = format!(
         "{}{} on {}",
         iface.name,

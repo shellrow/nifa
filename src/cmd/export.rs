@@ -4,7 +4,7 @@ use crate::cli::{Cli, ExportArgs, OutputFormat};
 use anyhow::{Context, Result};
 
 pub fn export_snapshot(cli: &Cli, args: &ExportArgs) -> Result<()> {
-    let snapshot = crate::collector::collect_snapshot()?;
+    let snapshot = crate::net::collect_snapshot()?;
     let (bytes, ext_default) = match cli.format {
         OutputFormat::Json | OutputFormat::Tree => {
             // tree are ignored for export, default to json

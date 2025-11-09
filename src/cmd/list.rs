@@ -1,6 +1,6 @@
 use crate::cli::Cli;
 use crate::cli::ListArgs;
-use crate::collector;
+use crate::net;
 use crate::renderer;
 use netdev::Interface;
 use netdev::interface::state::OperState;
@@ -8,11 +8,11 @@ use netdev::interface::state::OperState;
 /// Default action with no subcommand
 pub fn show_interfaces(cli: &Cli) {
     let interfaces: Vec<Interface> = if cli.default {
-        collector::iface::get_default_interface()
+        net::iface::get_default_interface()
             .into_iter()
             .collect()
     } else {
-        collector::iface::collect_all_interfaces()
+        net::iface::collect_all_interfaces()
     };
     // Render output
     match cli.format {
@@ -23,7 +23,7 @@ pub fn show_interfaces(cli: &Cli) {
 }
 
 pub fn list_interfaces(cli: &Cli, args: &ListArgs) {
-    let mut interfaces: Vec<Interface> = collector::iface::collect_all_interfaces();
+    let mut interfaces: Vec<Interface> = net::iface::collect_all_interfaces();
 
     // Apply filters
     if let Some(name_like) = &args.name_like {

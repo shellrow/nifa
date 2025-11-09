@@ -2,7 +2,7 @@ use anyhow::Result;
 use clap::Parser;
 mod cli;
 mod cmd;
-mod collector;
+mod net;
 mod db;
 mod model;
 mod renderer;
