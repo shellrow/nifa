@@ -811,6 +811,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "112b39cec0b298b6c1999fee3e31427f74f676e4cb9879ed1a121b43661a4154"
 
 [[package]]
+name = "mac-addr"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3d25b0e0b648a86960ac23b7ad4abb9717601dec6f66c165f5b037f3f03065f"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "memchr"
 version = "2.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -850,27 +859,28 @@ dependencies = [
 
 [[package]]
 name = "ndb-oui"
-version = "0.3.2"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "787e9dfc6693c40148f5123e1f53709eda311f1c2de07b87212bc9ce751db8f4"
+checksum = "ed688164b72fd09394f077dda902f086280565e6370f74364112f43b822a8f35"
 dependencies = [
  "anyhow",
  "bincode",
  "csv",
- "netdev",
+ "mac-addr",
  "rangemap",
  "serde",
 ]
 
 [[package]]
 name = "netdev"
-version = "0.38.1"
+version = "0.39.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07c1c4a111cf1ba52aa040e77e55fd0e2066d03a3d6ea7d8f383725166a60820"
+checksum = "35a703aa1a87cd885b9f674922445a42dbb0c0f4f1b28fef21b227ae32375d21"
 dependencies = [
  "dlopen2",
  "ipnet",
  "libc",
+ "mac-addr",
  "netlink-packet-core",
  "netlink-packet-route",
  "netlink-sys",
