@@ -6,6 +6,7 @@ mod net;
 mod db;
 mod model;
 mod renderer;
+mod fs;
 
 use cli::{Cli, Command};
 
@@ -30,14 +31,17 @@ async fn main() -> Result<()> {
         Some(Command::Os) => {
             cmd::os::show_system_net_stack(&cli);
         }
-        Some(Command::Export(args)) => {
-            cmd::export::export_snapshot(&cli, args)?;
-        }
         Some(Command::Monitor(args)) => {
             cmd::monitor::monitor_interfaces(&cli, args)?;
         }
         Some(Command::Public(args)) => {
             cmd::public::show_public_ip_info(&cli, args).await?;
+        }
+        Some(Command::Route(args)) => {
+            cmd::route::run_route(&cli, args)?;
+        }
+        Some(Command::Neigh(args)) => {
+            cmd::neigh::run_neigh(&cli, args)?;
         }
     };
     Ok(())

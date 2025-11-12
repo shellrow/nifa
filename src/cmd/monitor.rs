@@ -26,7 +26,8 @@ use termtree::Tree;
 use crate::cli::Cli;
 use crate::cli::MonitorArgs;
 use crate::net::iface::collect_all_interfaces;
-use crate::renderer::tree::{fmt_bps, fmt_flags, tree_label};
+use crate::renderer::{fmt_bps, fmt_flags};
+use crate::renderer::tree::tree_label;
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
 pub enum SortKey {

@@ -28,6 +28,7 @@ pub struct Cli {
 #[derive(Debug, Clone, Copy, ValueEnum)]
 pub enum OutputFormat {
     Tree,
+    Table,
     Json,
     Yaml,
 }
@@ -42,10 +43,12 @@ pub enum Command {
     Monitor(MonitorArgs),
     /// Show OS/network stack/permission information
     Os,
-    /// Export snapshot as JSON/YAML
-    Export(ExportArgs),
     /// Show public IP information
     Public(PublicArgs),
+    /// Show routing tables (IPv4/IPv6)
+    Route(RouteArgs),
+    /// Show neighbor table (ARP/NDP)
+    Neigh(NeighArgs),
 }
 
 /// List command arguments
@@ -72,6 +75,15 @@ pub struct ListArgs {
     /// Show interfaces with IPv6 address only
     #[arg(long)]
     pub ipv6: bool,
+    /// Output format
+    #[arg(short='f', long, value_enum, default_value_t = OutputFormat::Tree)]
+    pub format: OutputFormat,
+    /// Export data (JSON/YAML only)
+    #[arg(long, default_value_t = false)]
+    pub export: bool,
+    /// Output file for export
+    #[arg(long)]
+    pub output: Option<PathBuf>,
 }
 
 /// Show command arguments
@@ -79,6 +91,15 @@ pub struct ListArgs {
 pub struct ShowArgs {
     /// Show details for specified interface
     pub iface: String,
+    /// Output format
+    #[arg(short='f', long, value_enum, default_value_t = OutputFormat::Tree)]
+    pub format: OutputFormat,
+    /// Export data (JSON/YAML only)
+    #[arg(long, default_value_t = false)]
+    pub export: bool,
+    /// Output file for export
+    #[arg(long)]
+    pub output: Option<PathBuf>,
 }
 
 /// Monitor command arguments
@@ -98,14 +119,6 @@ pub struct MonitorArgs {
     pub unit: Unit,
 }
 
-/// Export command arguments
-#[derive(Args, Debug)]
-pub struct ExportArgs {
-    /// Output file
-    #[arg(short, long)]
-    pub output: Option<PathBuf>,
-}
-
 #[derive(Args, Debug)]
 pub struct PublicArgs {
     /// IPv4 only
@@ -114,4 +127,45 @@ pub struct PublicArgs {
     /// Timeout seconds
     #[arg(long, default_value_t = 3)]
     pub timeout: u64,
+    /// Output format
+    #[arg(short='f', long, value_enum, default_value_t = OutputFormat::Tree)]
+    pub format: OutputFormat,
+    /// Export data (JSON/YAML only)
+    #[arg(long, default_value_t = false)]
+    pub export: bool,
+    /// Output file for export
+    #[arg(long)]
+    pub output: Option<PathBuf>,
+}
+
+#[derive(clap::ValueEnum, Clone, Copy, Debug)]
+pub enum RouteFamilyOpt { All, Ipv4, Ipv6 }
+
+#[derive(Args, Debug)]
+pub struct RouteArgs {
+    /// Family filter
+    #[arg(long, value_enum, default_value_t = RouteFamilyOpt::All)]
+    pub family: RouteFamilyOpt,
+    /// Output format
+    #[arg(short='f', long, value_enum, default_value_t = OutputFormat::Tree)]
+    pub format: OutputFormat,
+    /// Export data (JSON/YAML only)
+    #[arg(long, default_value_t = false)]
+    pub export: bool,
+    /// Output file for export
+    #[arg(long)]
+    pub output: Option<PathBuf>,
+}
+
+#[derive(Args, Debug)]
+pub struct NeighArgs {
+    /// Output format
+    #[arg(short='f', long, value_enum, default_value_t = OutputFormat::Tree)]
+    pub format: OutputFormat,
+    /// Export data (JSON/YAML only)
+    #[arg(long, default_value_t = false)]
+    pub export: bool,
+    /// Output file for export
+    #[arg(long)]
+    pub output: Option<PathBuf>,
 }
