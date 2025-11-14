@@ -17,7 +17,7 @@ pub fn show_interfaces(cli: &Cli) {
             .into_iter()
             .collect()
     } else {
-        net::iface::collect_all_interfaces()
+        net::iface::get_all_interfaces()
     };
     // Render output
     match cli.format {
@@ -29,7 +29,7 @@ pub fn show_interfaces(cli: &Cli) {
 }
 
 pub fn list_interfaces(_cli: &Cli, args: &ListArgs) {
-    let mut interfaces: Vec<Interface> = net::iface::collect_all_interfaces();
+    let mut interfaces: Vec<Interface> = net::iface::get_all_interfaces();
 
     // Apply filters
     if let Some(name_like) = &args.name_like {

@@ -25,7 +25,7 @@ use termtree::Tree;
 
 use crate::cli::Cli;
 use crate::cli::MonitorArgs;
-use crate::net::iface::collect_all_interfaces;
+use crate::net::iface::get_all_interfaces;
 use crate::renderer::{fmt_bps, fmt_flags};
 use crate::renderer::tree::tree_label;
 
@@ -101,7 +101,7 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
     let mut terminal = Terminal::new(backend)?;
     terminal.clear()?;
 
-    let mut ifs = collect_all_interfaces();
+    let mut ifs = get_all_interfaces();
     // Collect (target IF only or all)
     if let Some(ref name) = target_iface {
         ifs.retain(|it| &it.name == name);
@@ -151,7 +151,7 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                             }
                             KeyCode::Char('o') => sort = sort.cycle(),
                             KeyCode::Char('r') => {
-                                ifs = collect_all_interfaces();
+                                ifs = get_all_interfaces();
                                 if let Some(ref name) = target_iface {
                                     ifs.retain(|it| &it.name == name);
                                 }

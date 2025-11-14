@@ -20,7 +20,7 @@ const VPN_NAME_PATTERNS: &[&str] = &[
     "expressvpn",
 ];
 
-pub fn collect_all_interfaces() -> Vec<Interface> {
+pub fn get_all_interfaces() -> Vec<Interface> {
     netdev::get_interfaces()
 }
 
