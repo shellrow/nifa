@@ -1,3 +1,5 @@
+use anyhow::Result;
+use serde::Serialize;
 use crate::{net::sys::SysInfo, model::snapshot::Snapshot};
 use netdev::Interface;
 
@@ -13,4 +15,12 @@ pub fn print_snapshot_yaml(sys: &SysInfo, default_iface: Option<Interface>) {
     };
     let yaml = serde_yaml::to_string(&snapshot).unwrap();
     println!("{}", yaml);
+}
+
+pub fn print_yaml<T: Serialize>(
+    data: &T,
+) -> Result<()> {
+    let yaml = serde_yaml::to_string(data)?;
+    println!("{}", yaml);
+    Ok(())
 }

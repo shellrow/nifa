@@ -5,3 +5,4 @@ pub mod public;
 pub mod show;
 pub mod route;
 pub mod neigh;
+pub mod socket;

@@ -43,6 +43,9 @@ async fn main() -> Result<()> {
         Some(Command::Neigh(args)) => {
             cmd::neigh::run_neigh(&cli, args)?;
         }
+        Some(Command::Socket(args)) => {
+            cmd::socket::show_sockets(&cli, args)?;
+        }
     };
     Ok(())
 }
