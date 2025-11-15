@@ -9,7 +9,7 @@ use crate::renderer::table::make_table;
 use termtree::Tree;
 use crate::renderer::tree::tree_label;
 
-pub fn run_neigh(_cli: &Cli, args: &NeighArgs) -> Result<()> {
+pub fn show_neigh(_cli: &Cli, args: &NeighArgs) -> Result<()> {
     let table = neigh::get_neighbor_table()?; // HashMap<IpAddr, MacAddr>
 
     if args.export {

@@ -6,7 +6,7 @@ use netroute::{RouteEntry, RouteFamily, RouteFlag};
 use termtree::Tree;
 use crate::renderer::tree::tree_label;
 
-pub fn run_route(_cli: &Cli, args: &RouteArgs) -> Result<()> {
+pub fn show_route(_cli: &Cli, args: &RouteArgs) -> Result<()> {
     let mut routes = route::list_routes()?;
 
     // family filter

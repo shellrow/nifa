@@ -38,10 +38,10 @@ async fn main() -> Result<()> {
             cmd::public::show_public_ip_info(&cli, args).await?;
         }
         Some(Command::Route(args)) => {
-            cmd::route::run_route(&cli, args)?;
+            cmd::route::show_route(&cli, args)?;
         }
         Some(Command::Neigh(args)) => {
-            cmd::neigh::run_neigh(&cli, args)?;
+            cmd::neigh::show_neigh(&cli, args)?;
         }
         Some(Command::Socket(args)) => {
             cmd::socket::show_sockets(&cli, args)?;
