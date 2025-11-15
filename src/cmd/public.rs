@@ -1,9 +1,9 @@
 use anyhow::{Context, Result};
-use netdev::Interface;
 use mac_addr::MacAddr;
+use netdev::Interface;
 use reqwest::Client;
-use termtree::Tree;
 use std::time::Duration;
+use termtree::Tree;
 
 use crate::cli::{Cli, OutputFormat, PublicArgs};
 use crate::db::oui::is_oui_db_initialized;
@@ -57,20 +57,14 @@ pub async fn show_public_ip_info(_cli: &Cli, args: &PublicArgs) -> Result<()> {
 
     match args.export {
         Some(export_date) => {
-            crate::fs::export(
-                export_date,
-                args.output.as_deref(),
-                &out,
-            )?;
+            crate::fs::export(export_date, args.output.as_deref(), &out)?;
             return Ok(());
         }
-        None => {
-            match args.format {
-                OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&out)?),
-                OutputFormat::Yaml => println!("{}", serde_yaml::to_string(&out)?),
-                _ => print_public_ip_tree(&out, default_iface_opt),
-            }
-        }
+        None => match args.format {
+            OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&out)?),
+            OutputFormat::Yaml => println!("{}", serde_yaml::to_string(&out)?),
+            _ => print_public_ip_tree(&out, default_iface_opt),
+        },
     }
     Ok(())
 }

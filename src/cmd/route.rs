@@ -1,10 +1,10 @@
-use anyhow::Result;
 use crate::cli::{Cli, OutputFormat, RouteArgs, RouteFamilyOpt};
 use crate::net::route;
 use crate::renderer::table::make_table;
+use crate::renderer::tree::tree_label;
+use anyhow::Result;
 use netroute::{RouteEntry, RouteFamily, RouteFlag};
 use termtree::Tree;
-use crate::renderer::tree::tree_label;
 
 pub fn show_route(_cli: &Cli, args: &RouteArgs) -> Result<()> {
     let mut routes = route::list_routes()?;
@@ -18,21 +18,15 @@ pub fn show_route(_cli: &Cli, args: &RouteArgs) -> Result<()> {
 
     match args.export {
         Some(export_format) => {
-            crate::fs::export(
-                export_format,
-                args.output.as_deref(),
-                &routes,
-            )?;
+            crate::fs::export(export_format, args.output.as_deref(), &routes)?;
             return Ok(());
         }
-        None => {
-            match args.format {
-                OutputFormat::Tree => print_route_tree(&routes),
-                OutputFormat::Table => print_route_table(&routes),
-                OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&routes)?),
-                OutputFormat::Yaml => println!("{}", serde_yaml::to_string(&routes)?),
-            }
-        }
+        None => match args.format {
+            OutputFormat::Tree => print_route_tree(&routes),
+            OutputFormat::Table => print_route_table(&routes),
+            OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&routes)?),
+            OutputFormat::Yaml => println!("{}", serde_yaml::to_string(&routes)?),
+        },
     }
     Ok(())
 }
@@ -83,15 +77,19 @@ fn print_route_tree(routes: &[RouteEntry]) {
         match r.family {
             RouteFamily::Ipv4 => {
                 v4.push(node);
-            },
+            }
             RouteFamily::Ipv6 => {
                 v6.push(node);
-            },
+            }
         }
     }
 
-    if !v4.leaves.is_empty() { root.push(v4); }
-    if !v6.leaves.is_empty() { root.push(v6); }
+    if !v4.leaves.is_empty() {
+        root.push(v4);
+    }
+    if !v6.leaves.is_empty() {
+        root.push(v6);
+    }
     println!("{}", root);
 }
 
@@ -99,14 +97,29 @@ fn print_route_table(routes: &[RouteEntry]) {
     let mut table = make_table(&["FAMILY", "DESTINATION", "VIA/NH", "DEV", "METRIC", "FLAGS"]);
 
     for r in routes {
-        let fam = match r.family { RouteFamily::Ipv4 => "v4", RouteFamily::Ipv6 => "v6" };
-        let via = r.gateway.map(|g| g.to_string())
+        let fam = match r.family {
+            RouteFamily::Ipv4 => "v4",
+            RouteFamily::Ipv6 => "v6",
+        };
+        let via = r
+            .gateway
+            .map(|g| g.to_string())
             .unwrap_or_else(|| if r.on_link { "link".into() } else { "-".into() });
         let dev = r.ifname.as_deref().unwrap_or("-");
         let metric = r.metric.map(|m| m.to_string()).unwrap_or("-".into());
-        let flags = r.flags.iter().map(RouteFlag::short).collect::<Vec<_>>().join("");
+        let flags = r
+            .flags
+            .iter()
+            .map(RouteFlag::short)
+            .collect::<Vec<_>>()
+            .join("");
         table.add_row(vec![
-            fam, &r.destination.to_string(), &via, dev, &metric, &flags,
+            fam,
+            &r.destination.to_string(),
+            &via,
+            dev,
+            &metric,
+            &flags,
         ]);
     }
 
@@ -114,6 +127,12 @@ fn print_route_table(routes: &[RouteEntry]) {
 }
 
 fn flags_short(r: &RouteEntry) -> String {
-    if r.flags.is_empty() { return "-".into(); }
-    r.flags.iter().map(RouteFlag::short).collect::<Vec<_>>().join("")
+    if r.flags.is_empty() {
+        return "-".into();
+    }
+    r.flags
+        .iter()
+        .map(RouteFlag::short)
+        .collect::<Vec<_>>()
+        .join("")
 }

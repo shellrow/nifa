@@ -1,9 +1,6 @@
 use anyhow::Result;
 use netsock::{
-    family::AddressFamilyFlags,
-    protocol::ProtocolFlags,
-    socket::SocketInfo,
-    get_sockets,
+    family::AddressFamilyFlags, get_sockets, protocol::ProtocolFlags, socket::SocketInfo,
 };
 
 pub fn collect_sockets(

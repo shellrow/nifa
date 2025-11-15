@@ -1,7 +1,3 @@
-use anyhow::Result;
-use netdev::Interface;
-use termtree::Tree;
-use mac_addr::MacAddr;
 use crate::cli::Cli;
 use crate::cli::IfaceArgs;
 use crate::db::oui::is_oui_db_initialized;
@@ -10,6 +6,10 @@ use crate::renderer;
 use crate::renderer::fmt_bps;
 use crate::renderer::fmt_flags;
 use crate::renderer::tree::tree_label;
+use anyhow::Result;
+use mac_addr::MacAddr;
+use netdev::Interface;
+use termtree::Tree;
 
 /// Default action with no subcommand
 pub fn show_default_interface(_cli: &Cli) -> Result<()> {
@@ -34,19 +34,19 @@ pub fn show_interface(_cli: &Cli, args: &IfaceArgs) -> Result<()> {
             match args.export {
                 Some(export_format) => {
                     // Export to file in specified format
-                    crate::fs::export(
-                        export_format,
-                        args.output.as_deref(),
-                        &iface,
-                    )?;
+                    crate::fs::export(export_format, args.output.as_deref(), &iface)?;
                     return Ok(());
                 }
                 None => {
                     // Render output
                     match args.format {
                         crate::cli::OutputFormat::Tree => print_interface_detail_tree(&iface),
-                        crate::cli::OutputFormat::Json => renderer::json::print_interface_json(&[iface]),
-                        crate::cli::OutputFormat::Yaml => renderer::yaml::print_interface_yaml(&[iface]),
+                        crate::cli::OutputFormat::Json => {
+                            renderer::json::print_interface_json(&[iface])
+                        }
+                        crate::cli::OutputFormat::Yaml => {
+                            renderer::yaml::print_interface_yaml(&[iface])
+                        }
                         _ => {
                             tracing::error!(
                                 "Unsupported format for show interface: {:?}",
@@ -67,10 +67,7 @@ pub fn show_interface(_cli: &Cli, args: &IfaceArgs) -> Result<()> {
 /// Print detailed information of a single interface in a tree structure.
 fn print_default_interface_tree(iface: &Interface) {
     let host = crate::net::sys::hostname();
-    let title = format!(
-        "Default Network Interface on {}",
-        host
-    );
+    let title = format!("Default Network Interface on {}", host);
     let mut root = Tree::new(tree_label(title));
 
     // flat fields (no General section)

@@ -1,7 +1,7 @@
 pub mod json;
+pub mod table;
 pub mod tree;
 pub mod yaml;
-pub mod table;
 
 pub fn fmt_bps(bps: u64) -> String {
     const K: f64 = 1_000.0;

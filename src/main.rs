@@ -2,12 +2,12 @@ use anyhow::Result;
 use clap::Parser;
 mod cli;
 mod cmd;
-mod net;
 mod db;
-mod model;
-mod renderer;
 mod fs;
 mod log;
+mod model;
+mod net;
+mod renderer;
 mod time;
 
 use cli::{Cli, Command};

@@ -1,17 +1,17 @@
-use std::{collections::HashMap, io, net::{IpAddr, Ipv4Addr, Ipv6Addr}, ptr};
 use netdev::MacAddr;
+use std::{
+    collections::HashMap,
+    io,
+    net::{IpAddr, Ipv4Addr, Ipv6Addr},
+    ptr,
+};
 
 use windows_sys::Win32::{
     Foundation::NO_ERROR,
+    NetworkManagement::IpHelper::{FreeMibTable, GetIpNetTable2, MIB_IPNET_ROW2, MIB_IPNET_TABLE2},
     Networking::WinSock::{
-        ADDRESS_FAMILY, AF_INET, AF_INET6, SOCKADDR_INET,
-        IN_ADDR, IN6_ADDR,
-        NlnsDelay, NlnsPermanent, NlnsProbe, NlnsReachable, NlnsStale
-    },
-    NetworkManagement::IpHelper::{
-        FreeMibTable,
-        GetIpNetTable2,
-        MIB_IPNET_ROW2, MIB_IPNET_TABLE2,
+        ADDRESS_FAMILY, AF_INET, AF_INET6, IN_ADDR, IN6_ADDR, NlnsDelay, NlnsPermanent, NlnsProbe,
+        NlnsReachable, NlnsStale, SOCKADDR_INET,
     },
 };
 
@@ -35,7 +35,10 @@ fn dump_ipnet(af: ADDRESS_FAMILY) -> io::Result<HashMap<IpAddr, MacAddr>> {
         let mut table_ptr: *mut MIB_IPNET_TABLE2 = ptr::null_mut();
         let ret = GetIpNetTable2(af, &mut table_ptr);
         if ret != NO_ERROR {
-            return Err(io::Error::new(io::ErrorKind::Other, format!("GetIpNetTable2 failed: {ret}")));
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                format!("GetIpNetTable2 failed: {ret}"),
+            ));
         }
         if table_ptr.is_null() {
             return Ok(out);
@@ -43,7 +46,8 @@ fn dump_ipnet(af: ADDRESS_FAMILY) -> io::Result<HashMap<IpAddr, MacAddr>> {
 
         // free on scope exit
         let table: &MIB_IPNET_TABLE2 = &*table_ptr;
-        let rows: &[MIB_IPNET_ROW2] = std::slice::from_raw_parts(table.Table.as_ptr(), table.NumEntries as usize);
+        let rows: &[MIB_IPNET_ROW2] =
+            std::slice::from_raw_parts(table.Table.as_ptr(), table.NumEntries as usize);
 
         for row in rows {
             if row.PhysicalAddressLength != 6 {
@@ -78,11 +82,7 @@ fn dump_ipnet(af: ADDRESS_FAMILY) -> io::Result<HashMap<IpAddr, MacAddr>> {
 fn is_interesting_state(state: i32) -> bool {
     matches!(
         state,
-        NlnsPermanent
-            | NlnsReachable
-            | NlnsStale
-            | NlnsDelay
-            | NlnsProbe
+        NlnsPermanent | NlnsReachable | NlnsStale | NlnsDelay | NlnsProbe
     )
 }
 
@@ -93,7 +93,9 @@ fn sockaddr_inet_to_ip(sa: &SOCKADDR_INET) -> Option<IpAddr> {
             AF_INET => {
                 let IN_ADDR { S_un: s } = sa.Ipv4.sin_addr;
                 let bytes = s.S_un_b;
-                Some(IpAddr::V4(Ipv4Addr::new(bytes.s_b1, bytes.s_b2, bytes.s_b3, bytes.s_b4)))
+                Some(IpAddr::V4(Ipv4Addr::new(
+                    bytes.s_b1, bytes.s_b2, bytes.s_b3, bytes.s_b4,
+                )))
             }
             AF_INET6 => {
                 let IN6_ADDR { u: u6 } = sa.Ipv6.sin6_addr;

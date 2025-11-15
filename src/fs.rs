@@ -4,11 +4,7 @@ use std::{fs, io::Write, path::Path};
 
 use crate::cli::ExportFormat;
 
-pub fn export<T: Serialize>(
-    format: ExportFormat,
-    output: Option<&Path>,
-    data: &T,
-) -> Result<()> {
+pub fn export<T: Serialize>(format: ExportFormat, output: Option<&Path>, data: &T) -> Result<()> {
     let (bytes, ext_default) = match format {
         ExportFormat::Json => (serde_json::to_vec_pretty(data)?, "json"),
         ExportFormat::Yaml => (serde_yaml::to_string(data)?.into_bytes(), "yaml"),
@@ -16,13 +12,11 @@ pub fn export<T: Serialize>(
 
     if let Some(path) = output {
         atomic_write(path, &bytes, ext_default)?;
-        tracing::info!(
-            "Exported {} bytes to {}",
-            bytes.len(),
-            path.display()
-        );
+        tracing::info!("Exported {} bytes to {}", bytes.len(), path.display());
     } else {
-        std::io::stdout().write_all(&bytes).context("write stdout")?;
+        std::io::stdout()
+            .write_all(&bytes)
+            .context("write stdout")?;
     }
 
     Ok(())

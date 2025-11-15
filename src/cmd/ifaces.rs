@@ -1,4 +1,3 @@
-use anyhow::Result;
 use crate::cli::Cli;
 use crate::cli::IfacesArgs;
 use crate::db::oui::is_oui_db_initialized;
@@ -6,6 +5,7 @@ use crate::net;
 use crate::renderer;
 use crate::renderer::table::make_table;
 use crate::renderer::tree::tree_label;
+use anyhow::Result;
 use mac_addr::MacAddr;
 use netdev::Interface;
 use netdev::interface::state::OperState;
@@ -15,7 +15,7 @@ pub fn list_interfaces(_cli: &Cli, args: &IfacesArgs) -> Result<()> {
     if args.vendor {
         crate::db::oui::init_oui_db()?;
     }
-    
+
     let mut interfaces: Vec<Interface> = net::iface::get_all_interfaces();
 
     // Apply filters
@@ -44,11 +44,7 @@ pub fn list_interfaces(_cli: &Cli, args: &IfacesArgs) -> Result<()> {
     match args.export {
         Some(export_format) => {
             // Export to file in specified format
-            crate::fs::export(
-                export_format,
-                args.output.as_deref(),
-                &interfaces,
-            )?;
+            crate::fs::export(export_format, args.output.as_deref(), &interfaces)?;
             return Ok(());
         }
         None => {
@@ -179,14 +175,18 @@ fn print_interface_tree(ifaces: &[Interface]) {
 }
 
 fn print_interface_table(ifs: &[Interface]) {
-    let mut table = make_table(&["INDEX", "NAME", "TYPE", "STATE", "MAC", "IPv4", "IPv6", "MTU"]);
+    let mut table = make_table(&[
+        "INDEX", "NAME", "TYPE", "STATE", "MAC", "IPv4", "IPv6", "MTU",
+    ]);
     for iface in ifs {
-        let ipv4 = iface.ipv4
+        let ipv4 = iface
+            .ipv4
             .iter()
             .map(|n| n.addr().to_string())
             .collect::<Vec<_>>()
             .join(", ");
-        let ipv6 = iface.ipv6
+        let ipv6 = iface
+            .ipv6
             .iter()
             .map(|n| n.addr().to_string())
             .collect::<Vec<_>>()
@@ -197,12 +197,14 @@ fn print_interface_table(ifs: &[Interface]) {
             iface.name.clone(),
             iface.if_type.name(),
             iface.oper_state.to_string(),
-            iface.mac_addr
+            iface
+                .mac_addr
                 .map(|m| m.to_string())
                 .unwrap_or_else(|| "-".into()),
             ipv4,
             ipv6,
-            iface.mtu
+            iface
+                .mtu
                 .map(|m| m.to_string())
                 .unwrap_or_else(|| "-".into()),
         ]);

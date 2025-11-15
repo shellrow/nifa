@@ -1,6 +1,8 @@
 use anyhow::Result;
 use tracing::{Level, level_filters::LevelFilter};
-use tracing_subscriber::{Layer, filter::Targets, fmt, layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{
+    Layer, filter::Targets, fmt, layer::SubscriberExt, util::SubscriberInitExt,
+};
 
 use crate::{cli::LogLevel, time::LocalDateTime};
 
@@ -19,9 +21,7 @@ pub fn init_logger(log_level: &LogLevel) -> Result<()> {
         .with_filter(filter);
 
     // Compose registry + formatting layer
-    tracing_subscriber::registry()
-        .with(fmt_layer)
-        .init();
+    tracing_subscriber::registry().with(fmt_layer).init();
 
     Ok(())
 }

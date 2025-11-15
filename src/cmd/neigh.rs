@@ -1,15 +1,15 @@
 use std::collections::HashMap;
 use std::net::IpAddr;
 
-use anyhow::Result;
-use mac_addr::MacAddr;
-use crate::cli::{Cli, OutputFormat, NeighArgs};
+use crate::cli::{Cli, NeighArgs, OutputFormat};
 use crate::db::oui::is_oui_db_initialized;
 use crate::net::neigh;
 use crate::renderer::table::make_table;
-use termtree::Tree;
 use crate::renderer::tree::tree_label;
+use anyhow::Result;
+use mac_addr::MacAddr;
 use netdev::NetworkDevice;
+use termtree::Tree;
 
 pub fn show_neigh(_cli: &Cli, args: &NeighArgs) -> Result<()> {
     if args.vendor {
@@ -17,39 +17,35 @@ pub fn show_neigh(_cli: &Cli, args: &NeighArgs) -> Result<()> {
     }
 
     let table: HashMap<IpAddr, MacAddr> = neigh::get_neighbor_table()?;
-    
+
     match args.export {
         Some(export_format) => {
             let devices = map_to_devices(table);
-            crate::fs::export(
-                export_format,
-                args.output.as_deref(),
-                &devices,
-            )?;
+            crate::fs::export(export_format, args.output.as_deref(), &devices)?;
             return Ok(());
         }
-        None => {
-            match args.format {
-                OutputFormat::Tree => print_neigh_tree(&table),
-                OutputFormat::Table => print_neigh_table(&table),
-                OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&table)?),
-                OutputFormat::Yaml => println!("{}", serde_yaml::to_string(&table)?),
-            }
-        }
+        None => match args.format {
+            OutputFormat::Tree => print_neigh_tree(&table),
+            OutputFormat::Table => print_neigh_table(&table),
+            OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&table)?),
+            OutputFormat::Yaml => println!("{}", serde_yaml::to_string(&table)?),
+        },
     }
     Ok(())
 }
 
 fn map_to_devices(map: HashMap<IpAddr, MacAddr>) -> Vec<NetworkDevice> {
-    map.into_iter().map(|(ip, mac)| {
-        let mut device = NetworkDevice::new();
-        device.mac_addr = mac;
-        match ip {
-            IpAddr::V4(v4) => device.ipv4.push(v4),
-            IpAddr::V6(v6) => device.ipv6.push(v6),
-        }
-        device
-    }).collect()
+    map.into_iter()
+        .map(|(ip, mac)| {
+            let mut device = NetworkDevice::new();
+            device.mac_addr = mac;
+            match ip {
+                IpAddr::V4(v4) => device.ipv4.push(v4),
+                IpAddr::V6(v6) => device.ipv6.push(v6),
+            }
+            device
+        })
+        .collect()
 }
 
 fn print_neigh_tree(table: &std::collections::HashMap<IpAddr, MacAddr>) {
@@ -62,7 +58,7 @@ fn print_neigh_tree(table: &std::collections::HashMap<IpAddr, MacAddr>) {
     let mut v6 = Tree::new(tree_label("IPv6"));
 
     let mut keys: Vec<_> = table.keys().cloned().collect();
-    keys.sort_by(|a,b| a.to_string().cmp(&b.to_string()));
+    keys.sort_by(|a, b| a.to_string().cmp(&b.to_string()));
 
     for ip in keys {
         let mac = table.get(&ip).unwrap();
@@ -108,15 +104,19 @@ fn print_neigh_tree(table: &std::collections::HashMap<IpAddr, MacAddr>) {
         match ip {
             std::net::IpAddr::V4(_) => {
                 v4.push(ip_node);
-            },
+            }
             std::net::IpAddr::V6(_) => {
                 v6.push(ip_node);
-            },
+            }
         }
     }
 
-    if !v4.leaves.is_empty() { root.push(v4); }
-    if !v6.leaves.is_empty() { root.push(v6); }
+    if !v4.leaves.is_empty() {
+        root.push(v4);
+    }
+    if !v6.leaves.is_empty() {
+        root.push(v6);
+    }
     println!("{}", root);
 }
 
@@ -173,7 +173,11 @@ fn print_neigh_table(table: &std::collections::HashMap<IpAddr, MacAddr>) {
             ip.to_string(),
             mac.to_string(),
             vendor.unwrap_or_else(|| "-".into()),
-            if tags.is_empty() { "-".into() } else { tags.join(", ") },
+            if tags.is_empty() {
+                "-".into()
+            } else {
+                tags.join(", ")
+            },
         ]);
     }
 

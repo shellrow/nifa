@@ -1,7 +1,5 @@
 use comfy_table::{
-    presets::UTF8_FULL,
-    modifiers::UTF8_ROUND_CORNERS,
-    Table, ContentArrangement, Color, Cell,
+    Cell, Color, ContentArrangement, Table, modifiers::UTF8_ROUND_CORNERS, presets::UTF8_FULL,
 };
 
 /// Create a preconfigured comfy-table instance with consistent styling.

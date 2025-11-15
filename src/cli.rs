@@ -179,7 +179,11 @@ pub struct PublicArgs {
 }
 
 #[derive(clap::ValueEnum, Clone, Copy, Debug)]
-pub enum RouteFamilyOpt { All, Ipv4, Ipv6 }
+pub enum RouteFamilyOpt {
+    All,
+    Ipv4,
+    Ipv6,
+}
 
 #[derive(Args, Debug)]
 pub struct RouteArgs {

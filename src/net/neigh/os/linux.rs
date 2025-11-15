@@ -1,10 +1,10 @@
 use netdev::MacAddr;
 use netlink_packet_core::{NLM_F_DUMP, NLM_F_REQUEST, NetlinkMessage, NetlinkPayload};
 use netlink_packet_route::{
-    neighbour::{NeighbourAddress, NeighbourAttribute, NeighbourMessage},
     RouteNetlinkMessage,
+    neighbour::{NeighbourAddress, NeighbourAttribute, NeighbourMessage},
 };
-use netlink_sys::{protocols::NETLINK_ROUTE, Socket, SocketAddr};
+use netlink_sys::{Socket, SocketAddr, protocols::NETLINK_ROUTE};
 use std::{
     collections::HashMap,
     io::{self, ErrorKind},
@@ -14,7 +14,7 @@ use std::{
 };
 
 const SEQ_BASE: u32 = 0x6E_70_6C_73; // npls (netpulsar)
-const RECV_BUFSZ: usize = 1 << 20;    // 1MB
+const RECV_BUFSZ: usize = 1 << 20; // 1MB
 const RECV_TIMEOUT: Duration = Duration::from_secs(2);
 const NLMSG_ALIGNTO: usize = 4;
 const MIN_NLMSG_HEADER_LEN: usize = 16;
