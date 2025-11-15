@@ -338,30 +338,41 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                     if let Some(iface) = ifs.iter().find(|it| &it.index == sel_if_index) {
                         let area = centered_rect(66, 60, size);
 
-                        // Background fill (black)
-                        // f.render_widget(Block::default().style(Style::default().bg(Color::Black)), size);
+                        // Render gray overlay behind the popup
+                        let overlay = Block::default()
+                            .style(Style::default().bg(Color::DarkGray));
+                        f.render_widget(overlay, size);
 
-                        // Clear the area first
+                        // Clear the area for the popup
                         f.render_widget(Clear, area);
 
+                        // Render the modal body
                         let block = Block::default()
-                            .title(format!("Details: {} (Esc to close — ↑/↓/w/s scroll)", iface.name))
+                            .title(format!(
+                                "Details: {} (Esc to close — ↑/↓/w/s scroll)",
+                                iface.name
+                            ))
                             .borders(Borders::ALL)
-                            .style(Style::default().bg(Color::Black));
+                            .style(
+                                Style::default()
+                                    .bg(Color::Black)
+                                    .fg(Color::White),
+                            );
 
                         let inner = block.inner(area);
 
                         // Detail text (tree string created by termtree)
                         let detail_text = iface_to_text(iface);
-
                         // Estimate content height (based on line breaks)
                         let content_lines = detail_text.lines().count() as u16;
                         // Visible lines in the popup
                         let visible_lines = inner.height;
-
-                        // Clamp to scroll limit
-                        let max_scroll = content_lines.saturating_sub(visible_lines).saturating_add(2);
-                        if popup_scroll > max_scroll { popup_scroll = max_scroll; }
+                        let max_scroll = content_lines
+                            .saturating_sub(visible_lines)
+                            .saturating_add(2);
+                        if popup_scroll > max_scroll {
+                            popup_scroll = max_scroll;
+                        }
 
                         let paragraph = Paragraph::new(Text::raw(detail_text))
                             .block(block)
