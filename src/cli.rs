@@ -8,10 +8,6 @@ use crate::cmd::monitor::{SortKey, Unit};
 #[derive(Debug, Parser)]
 #[command(name = "nifa", author, version, about = "nifa - Cross-platform CLI tool for network information", long_about = None)]
 pub struct Cli {
-    /// With vendor info (OUI lookup)
-    #[arg(long, default_value_t = false)]
-    pub with_vendor: bool,
-
     /// Subcommand
     #[command(subcommand)]
     pub command: Option<Command>,
@@ -84,6 +80,9 @@ pub struct IfacesArgs {
     /// Output file for export
     #[arg(long)]
     pub output: Option<PathBuf>,
+    /// With vendor info (OUI lookup)
+    #[arg(long, default_value_t = false)]
+    pub vendor: bool,
 }
 
 /// Iface command arguments
@@ -100,6 +99,9 @@ pub struct IfaceArgs {
     /// Output file for export
     #[arg(long)]
     pub output: Option<PathBuf>,
+    /// With vendor info (OUI lookup)
+    #[arg(long, default_value_t = false)]
+    pub vendor: bool,
 }
 
 /// Monitor command arguments
@@ -182,6 +184,9 @@ pub struct NeighArgs {
     /// Output file for export
     #[arg(long)]
     pub output: Option<PathBuf>,
+    /// With vendor info (OUI lookup)
+    #[arg(long, default_value_t = false)]
+    pub vendor: bool,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]

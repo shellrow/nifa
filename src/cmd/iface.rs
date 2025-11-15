@@ -14,7 +14,7 @@ use crate::renderer::tree::tree_label;
 /// Default action with no subcommand
 pub fn show_default_interface(_cli: &Cli) -> Result<()> {
     let iface: Interface = net::iface::get_default_interface()
-        .ok_or_else(|| anyhow::anyhow!("No default interface found"))?;    
+        .ok_or_else(|| anyhow::anyhow!("No default interface found"))?;
     // Render output
     print_default_interface_tree(&iface);
 
@@ -26,6 +26,9 @@ pub fn show_default_interface(_cli: &Cli) -> Result<()> {
 
 /// Show specified interface details
 pub fn show_interface(_cli: &Cli, args: &IfaceArgs) -> Result<()> {
+    if args.vendor {
+        crate::db::oui::init_oui_db()?;
+    }
     match net::iface::get_interface_by_name(&args.iface) {
         Some(iface) => {
             match args.export {

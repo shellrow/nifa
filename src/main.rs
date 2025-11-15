@@ -14,10 +14,6 @@ use cli::{Cli, Command};
 async fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    if cli.with_vendor {
-        db::oui::init_oui_db()?;
-    }
-
     match &cli.command {
         None => {
             cmd::iface::show_default_interface(&cli)?;

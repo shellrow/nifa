@@ -12,6 +12,10 @@ use netdev::interface::state::OperState;
 use termtree::Tree;
 
 pub fn list_interfaces(_cli: &Cli, args: &IfacesArgs) -> Result<()> {
+    if args.vendor {
+        crate::db::oui::init_oui_db()?;
+    }
+    
     let mut interfaces: Vec<Interface> = net::iface::get_all_interfaces();
 
     // Apply filters

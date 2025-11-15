@@ -12,7 +12,12 @@ use crate::renderer::tree::tree_label;
 use netdev::NetworkDevice;
 
 pub fn show_neigh(_cli: &Cli, args: &NeighArgs) -> Result<()> {
+    if args.vendor {
+        crate::db::oui::init_oui_db()?;
+    }
+
     let table: HashMap<IpAddr, MacAddr> = neigh::get_neighbor_table()?;
+    
     match args.export {
         Some(export_format) => {
             let devices = map_to_devices(table);
