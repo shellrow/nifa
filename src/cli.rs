@@ -4,9 +4,9 @@ use clap::{Args, Parser, Subcommand, ValueEnum};
 
 use crate::cmd::monitor::{SortKey, Unit};
 
-/// nifa - Cross-platform CLI tool for network information
+/// nifa - Cross-platform network inspection tool
 #[derive(Debug, Parser)]
-#[command(name = "nifa", author, version, about = "nifa - Cross-platform CLI tool for network information", long_about = None)]
+#[command(name = "nifa", author, version, about = "nifa - Cross-platform network inspection tool", long_about = None)]
 pub struct Cli {
     /// Set log level
     #[arg(short = 'l', long, value_enum, default_value_t = LogLevel::Error)]

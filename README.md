@@ -3,7 +3,7 @@
 [license-badge]: https://img.shields.io/crates/l/nifa.svg
 
 # nifa [![Crates.io][crates-badge]][crates-url] ![License][license-badge]
-Cross-platform CLI tool for network information
+Cross-platform network inspection tool
 
 ## Features
 - List all network interfaces with detailed information
