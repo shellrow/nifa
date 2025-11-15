@@ -102,7 +102,7 @@ pub struct IfacesArgs {
     #[arg(long, value_enum)]
     pub export: Option<ExportFormat>,
     /// Output file for export
-    #[arg(long)]
+    #[arg(short = 'o', long)]
     pub output: Option<PathBuf>,
     /// With vendor info (OUI lookup)
     #[arg(long, default_value_t = false)]
@@ -121,7 +121,7 @@ pub struct IfaceArgs {
     #[arg(long, value_enum)]
     pub export: Option<ExportFormat>,
     /// Output file for export
-    #[arg(long)]
+    #[arg(short = 'o', long)]
     pub output: Option<PathBuf>,
     /// With vendor info (OUI lookup)
     #[arg(long, default_value_t = false)]
@@ -155,7 +155,7 @@ pub struct SystemArgs {
     #[arg(long, value_enum)]
     pub export: Option<ExportFormat>,
     /// Output file for export
-    #[arg(long)]
+    #[arg(short = 'o', long)]
     pub output: Option<PathBuf>,
 }
 
@@ -174,7 +174,7 @@ pub struct PublicArgs {
     #[arg(long, value_enum)]
     pub export: Option<ExportFormat>,
     /// Output file for export
-    #[arg(long)]
+    #[arg(short = 'o', long)]
     pub output: Option<PathBuf>,
 }
 
@@ -193,7 +193,7 @@ pub struct RouteArgs {
     #[arg(long, value_enum)]
     pub export: Option<ExportFormat>,
     /// Output file for export
-    #[arg(long)]
+    #[arg(short = 'o', long)]
     pub output: Option<PathBuf>,
 }
 
@@ -206,7 +206,7 @@ pub struct NeighArgs {
     #[arg(long, value_enum)]
     pub export: Option<ExportFormat>,
     /// Output file for export
-    #[arg(long)]
+    #[arg(short = 'o', long)]
     pub output: Option<PathBuf>,
     /// With vendor info (OUI lookup)
     #[arg(long, default_value_t = false)]
@@ -258,6 +258,6 @@ pub struct SocketArgs {
     pub export: Option<ExportFormat>,
 
     /// Output file for export
-    #[arg(long)]
+    #[arg(short = 'o', long)]
     pub output: Option<std::path::PathBuf>,
 }
