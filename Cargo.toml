@@ -1,9 +1,9 @@
 [package]
 name = "nifa"
-version = "0.3.1"
+version = "0.4.0"
 edition = "2024"
 authors = ["shellrow <shellrow@foctal.com>"]
-description = "Cross-platform CLI tool for network information"
+description = "Cross-platform network inspection tool"
 repository = "https://github.com/shellrow/nifa"
 homepage = "https://github.com/shellrow/nifa"
 documentation = "https://github.com/shellrow/nifa"
@@ -14,27 +14,38 @@ license = "MIT"
 
 [dependencies]
 anyhow = { version = "1" }
+chrono = { version = "0.4" }
 tracing = { version = "0.1" }
+tracing-subscriber = { version = "0.3", features = ["time", "chrono"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
 serde_yaml = { version = "0.9" }
-netdev = { version = "0.38", features = ["serde"] }
+mac-addr = { version = "0.3.0" }
+netdev = { version = "0.39", features = ["serde"] }
+netroute = { version = "0.3", features = ["serde"] }
+netsock = { version = "0.5", features = ["serde"] }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "rustls-tls-native-roots"] }
 clap = { version = "4.5", features = ["derive", "cargo"] }
 termtree = { version = "0.5" }
 hostname = { version = "0.4" }
 os_info = { version = "3.12" }
-ndb-oui = { version = "0.3", features = ["bundled"] }
+ndb-oui = { version = "0.4", features = ["bundled"] }
 ratatui = "0.25"
 crossterm = "0.27"
 humansize = "2.1"
 url = "2.5"
-#tracing-subscriber = { version = "0.3", features = ["time", "chrono"] }
+comfy-table = "7.2"
 #home = { version = "0.5" }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+netlink-packet-core = "0.8"
+netlink-packet-route = "0.25"
+netlink-sys = "0.8"
+rtnetlink = "0.18"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows-sys = { version = "0.59", features = ["Win32_System_SystemInformation", "Wdk_System_SystemServices"] }

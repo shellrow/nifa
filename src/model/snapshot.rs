@@ -1,7 +1,7 @@
 use netdev::Interface;
 use serde::{Deserialize, Serialize};
 
-use crate::collector::sys::SysInfo;
+use crate::net::sys::SysInfo;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Snapshot {

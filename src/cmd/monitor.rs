@@ -25,8 +25,9 @@ use termtree::Tree;
 
 use crate::cli::Cli;
 use crate::cli::MonitorArgs;
-use crate::collector::iface::collect_all_interfaces;
-use crate::renderer::tree::{fmt_bps, fmt_flags, tree_label};
+use crate::net::iface::get_all_interfaces;
+use crate::renderer::tree::tree_label;
+use crate::renderer::{fmt_bps, fmt_flags};
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
 pub enum SortKey {
@@ -51,13 +52,13 @@ impl SortKey {
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
 pub enum Unit {
-    Bytes,
     Bits,
+    Bytes,
 }
 
 impl Default for Unit {
     fn default() -> Self {
-        Unit::Bytes
+        Unit::Bits
     }
 }
 
@@ -79,6 +80,9 @@ struct RowData {
     index: u32,
     name: String,
     friendly_name: Option<String>,
+    state: String,
+    mac_addr: Option<String>,
+    ipv4_addr: Option<String>,
     total: u64,
     total_tx: u64,
     total_rx: u64,
@@ -100,7 +104,7 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
     let mut terminal = Terminal::new(backend)?;
     terminal.clear()?;
 
-    let mut ifs = collect_all_interfaces();
+    let mut ifs = get_all_interfaces();
     // Collect (target IF only or all)
     if let Some(ref name) = target_iface {
         ifs.retain(|it| &it.name == name);
@@ -150,7 +154,7 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                             }
                             KeyCode::Char('o') => sort = sort.cycle(),
                             KeyCode::Char('r') => {
-                                ifs = collect_all_interfaces();
+                                ifs = get_all_interfaces();
                                 if let Some(ref name) = target_iface {
                                     ifs.retain(|it| &it.name == name);
                                 }
@@ -226,6 +230,9 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                             index: itf.index,
                             name: itf.name.clone(),
                             friendly_name: itf.friendly_name.clone(),
+                            state: itf.oper_state.as_str().to_string(),
+                            mac_addr: itf.mac_addr.as_ref().map(|m| m.to_string()),
+                            ipv4_addr: itf.ipv4.first().map(|n| n.addr().to_string()),
                             total_rx: st.rx_bytes,
                             total_tx: st.tx_bytes,
                             total: st.rx_bytes + st.tx_bytes,
@@ -265,13 +272,15 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                 // Header
                 let unit_label = match args.unit { Unit::Bytes => "bytes", Unit::Bits => "bits" };
                 let title = format!(
-                    "nifa monitor — sort:{:?} — unit:{} — interval:{}s {}",
+                    "nifa monitor - sort:{:?} - unit:{} - interval:{}s {}",
                     sort, unit_label, args.interval, target_iface.as_deref().unwrap_or("(all)")
                 );
 
                 let header = Row::new(vec![
                     Span::styled("IFACE", Style::default().add_modifier(Modifier::BOLD)),
-                    Span::styled("Total", Style::default().add_modifier(Modifier::BOLD)),
+                    Span::styled("STATE", Style::default().add_modifier(Modifier::BOLD)),
+                    Span::styled("MAC", Style::default().add_modifier(Modifier::BOLD)),
+                    Span::styled("IPv4", Style::default().add_modifier(Modifier::BOLD)),
                     Span::styled("Total RX", Style::default().add_modifier(Modifier::BOLD)),
                     Span::styled("Total TX", Style::default().add_modifier(Modifier::BOLD)),
                     Span::styled("RX/s", Style::default().add_modifier(Modifier::BOLD)),
@@ -281,9 +290,11 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                 let rows_iter = rows_cache.iter().enumerate().map(|(i, r)| {
                     let base = Row::new(vec![
                         Span::raw(platform_if_name(r)),
-                        Span::raw(human_total(r.total, args.unit)),
-                        Span::raw(human_total(r.total_rx, args.unit)),
-                        Span::raw(human_total(r.total_tx, args.unit)),
+                        Span::raw(r.state.clone()),
+                        Span::raw(r.mac_addr.clone().unwrap_or_default()),
+                        Span::raw(r.ipv4_addr.clone().unwrap_or_default()),
+                        Span::raw(human_total(r.total_rx, Unit::Bytes)),
+                        Span::raw(human_total(r.total_tx, Unit::Bytes)),
                         Span::raw(human_rate(r.rx, args.unit)),
                         Span::raw(human_rate(r.tx, args.unit)),
                     ]);
@@ -297,11 +308,13 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                 // Table
                 let table = Table::new(rows_iter, [
                         Constraint::Length(max_name_len),
+                        Constraint::Length(8),
+                        Constraint::Length(18),
                         Constraint::Length(14),
-                        Constraint::Length(14),
-                        Constraint::Length(14),
-                        Constraint::Length(14),
-                        Constraint::Length(14),
+                        Constraint::Length(12),
+                        Constraint::Length(12),
+                        Constraint::Length(12),
+                        Constraint::Length(12),
                     ])
                     .header(header)
                     .block(Block::default().borders(Borders::ALL).title(title))
@@ -325,30 +338,41 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                     if let Some(iface) = ifs.iter().find(|it| &it.index == sel_if_index) {
                         let area = centered_rect(66, 60, size);
 
-                        // Background fill (black)
-                        // f.render_widget(Block::default().style(Style::default().bg(Color::Black)), size);
+                        // Render gray overlay behind the popup
+                        let overlay = Block::default()
+                            .style(Style::default().bg(Color::DarkGray));
+                        f.render_widget(overlay, size);
 
-                        // Clear the area first
+                        // Clear the area for the popup
                         f.render_widget(Clear, area);
 
+                        // Render the modal body
                         let block = Block::default()
-                            .title(format!("Details: {} (Esc to close — ↑/↓/w/s scroll)", iface.name))
+                            .title(format!(
+                                "Details: {} (Esc to close - ↑/↓/w/s scroll)",
+                                iface.name
+                            ))
                             .borders(Borders::ALL)
-                            .style(Style::default().bg(Color::Black));
+                            .style(
+                                Style::default()
+                                    .bg(Color::Black)
+                                    .fg(Color::White),
+                            );
 
                         let inner = block.inner(area);
 
                         // Detail text (tree string created by termtree)
                         let detail_text = iface_to_text(iface);
-
                         // Estimate content height (based on line breaks)
                         let content_lines = detail_text.lines().count() as u16;
                         // Visible lines in the popup
                         let visible_lines = inner.height;
-
-                        // Clamp to scroll limit
-                        let max_scroll = content_lines.saturating_sub(visible_lines).saturating_add(2);
-                        if popup_scroll > max_scroll { popup_scroll = max_scroll; }
+                        let max_scroll = content_lines
+                            .saturating_sub(visible_lines)
+                            .saturating_add(2);
+                        if popup_scroll > max_scroll {
+                            popup_scroll = max_scroll;
+                        }
 
                         let paragraph = Paragraph::new(Text::raw(detail_text))
                             .block(block)
@@ -474,7 +498,7 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
 }
 
 fn iface_to_text(iface: &netdev::Interface) -> String {
-    let host = crate::collector::sys::hostname();
+    let host = crate::net::sys::hostname();
     let title = format!(
         "{}{} on {}",
         iface.name,
