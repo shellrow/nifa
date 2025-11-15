@@ -10,24 +10,6 @@ use netdev::Interface;
 use netdev::interface::state::OperState;
 use termtree::Tree;
 
-/// Default action with no subcommand
-pub fn show_interfaces(cli: &Cli) {
-    let interfaces: Vec<Interface> = if cli.default {
-        net::iface::get_default_interface()
-            .into_iter()
-            .collect()
-    } else {
-        net::iface::get_all_interfaces()
-    };
-    // Render output
-    match cli.format {
-        crate::cli::OutputFormat::Tree => print_interface_tree(&interfaces),
-        crate::cli::OutputFormat::Json => renderer::json::print_interface_json(&interfaces),
-        crate::cli::OutputFormat::Yaml => renderer::yaml::print_interface_yaml(&interfaces),
-        crate::cli::OutputFormat::Table => print_interface_table(&interfaces),
-    }
-}
-
 pub fn list_interfaces(_cli: &Cli, args: &IfacesArgs) {
     let mut interfaces: Vec<Interface> = net::iface::get_all_interfaces();
 

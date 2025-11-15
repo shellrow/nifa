@@ -15,7 +15,7 @@ use netsock::{
     socket::SocketInfo,
 };
 
-pub fn show_sockets(cli: &Cli, args: &SocketArgs) -> Result<()> {
+pub fn show_sockets(_cli: &Cli, args: &SocketArgs) -> Result<()> {
     let pf = match args.proto {
         SocketProto::Tcp => ProtocolFlags::TCP,
         SocketProto::Udp => ProtocolFlags::UDP,
@@ -52,7 +52,7 @@ pub fn show_sockets(cli: &Cli, args: &SocketArgs) -> Result<()> {
     }
 
     if args.export {
-        export(cli.format, args.output.as_deref(), &socks)?;
+        export(args.format, args.output.as_deref(), &socks)?;
     }
 
     match args.format {

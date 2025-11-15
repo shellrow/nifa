@@ -8,14 +8,6 @@ use crate::cmd::monitor::{SortKey, Unit};
 #[derive(Debug, Parser)]
 #[command(name = "nifa", author, version, about = "nifa - Cross-platform CLI tool for network information", long_about = None)]
 pub struct Cli {
-    /// Show only default interface
-    #[arg(short, long)]
-    pub default: bool,
-
-    /// Output format
-    #[arg(short='f', long, value_enum, default_value_t = OutputFormat::Tree)]
-    pub format: OutputFormat,
-
     /// With vendor info (OUI lookup)
     #[arg(long, default_value_t = false)]
     pub with_vendor: bool,
@@ -42,7 +34,7 @@ pub enum Command {
     /// Monitor traffic statistics for all interfaces
     Monitor(MonitorArgs),
     /// Show OS/network stack/permission information
-    System,
+    System(SystemArgs),
     /// Show public IP information
     Public(PublicArgs),
     /// Show routing tables (IPv4/IPv6)
@@ -119,6 +111,20 @@ pub struct MonitorArgs {
     /// Display unit (bytes or bits)
     #[arg(long, value_enum, default_value_t=Unit::Bytes)]
     pub unit: Unit,
+}
+
+/// System command arguments
+#[derive(Args, Debug)]
+pub struct SystemArgs {
+    /// Output format
+    #[arg(short='f', long, value_enum, default_value_t = OutputFormat::Tree)]
+    pub format: OutputFormat,
+    /// Export data (JSON/YAML only)
+    #[arg(long, default_value_t = false)]
+    pub export: bool,
+    /// Output file for export
+    #[arg(long)]
+    pub output: Option<PathBuf>,
 }
 
 #[derive(Args, Debug)]

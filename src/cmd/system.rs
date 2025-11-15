@@ -3,13 +3,13 @@ use termtree::Tree;
 use url::Url;
 use mac_addr::MacAddr;
 
-use crate::{cli::Cli, db::oui::is_oui_db_initialized, net::sys::SysInfo, renderer::{fmt_bps, tree::tree_label}};
+use crate::{cli::{Cli, SystemArgs}, db::oui::is_oui_db_initialized, net::sys::SysInfo, renderer::{fmt_bps, tree::tree_label}};
 
 /// Show system network stack details
-pub fn show_system_net_stack(cli: &Cli) {
+pub fn show_system_net_stack(_cli: &Cli, args: &SystemArgs) {
     let sys_info = crate::net::sys::system_info();
     let default_iface_opt = crate::net::iface::get_default_interface();
-    match cli.format {
+    match args.format {
         crate::cli::OutputFormat::Tree => {
             print_system_with_default_iface(&sys_info, default_iface_opt)
         }
@@ -22,7 +22,7 @@ pub fn show_system_net_stack(cli: &Cli) {
         _ => {
             tracing::error!(
                 "Unsupported format for show system network stack: {:?}",
-                cli.format
+                args.format
             );
         }
     }
