@@ -232,31 +232,24 @@ pub struct SocketArgs {
     /// Protocol filter
     #[arg(long, value_enum, default_value = "all")]
     pub proto: SocketProto,
-
     /// Address family filter
     #[arg(long, value_enum, default_value = "all")]
     pub family: SocketFamily,
-
     /// TCP state filter (established, listen, time_wait, all)
     #[arg(long)]
     pub state: Option<String>,
-
     /// Filter by local or remote port
     #[arg(long)]
     pub port: Option<u16>,
-
     /// Filter by PID
     #[arg(long)]
     pub pid: Option<u32>,
-
     /// Output format
     #[arg(short='f', long, value_enum, default_value_t = OutputFormat::Tree)]
     pub format: OutputFormat,
-
     /// Export data instead of printing to stdout
     #[arg(long, value_enum)]
     pub export: Option<ExportFormat>,
-
     /// Output file for export
     #[arg(short = 'o', long)]
     pub output: Option<std::path::PathBuf>,
