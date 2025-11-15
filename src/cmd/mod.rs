@@ -1,8 +1,8 @@
-pub mod list;
+pub mod ifaces;
 pub mod monitor;
-pub mod os;
+pub mod system;
 pub mod public;
-pub mod show;
+pub mod iface;
 pub mod route;
 pub mod neigh;
 pub mod socket;

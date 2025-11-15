@@ -1,5 +1,5 @@
 use crate::cli::Cli;
-use crate::cli::ListArgs;
+use crate::cli::IfacesArgs;
 use crate::db::oui::is_oui_db_initialized;
 use crate::net;
 use crate::renderer;
@@ -28,7 +28,7 @@ pub fn show_interfaces(cli: &Cli) {
     }
 }
 
-pub fn list_interfaces(_cli: &Cli, args: &ListArgs) {
+pub fn list_interfaces(_cli: &Cli, args: &IfacesArgs) {
     let mut interfaces: Vec<Interface> = net::iface::get_all_interfaces();
 
     // Apply filters

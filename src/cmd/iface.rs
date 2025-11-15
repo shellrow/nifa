@@ -2,7 +2,7 @@ use netdev::Interface;
 use termtree::Tree;
 use mac_addr::MacAddr;
 use crate::cli::Cli;
-use crate::cli::ShowArgs;
+use crate::cli::IfaceArgs;
 use crate::db::oui::is_oui_db_initialized;
 use crate::net;
 use crate::renderer;
@@ -11,7 +11,7 @@ use crate::renderer::fmt_flags;
 use crate::renderer::tree::tree_label;
 
 /// Show specified interface details
-pub fn show_interface(_cli: &Cli, args: &ShowArgs) {
+pub fn show_interface(_cli: &Cli, args: &IfaceArgs) {
     match net::iface::get_interface_by_name(&args.iface) {
         Some(iface) => {
             if args.export {

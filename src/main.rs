@@ -20,16 +20,16 @@ async fn main() -> Result<()> {
 
     match &cli.command {
         None => {
-            cmd::list::show_interfaces(&cli);
+            cmd::ifaces::show_interfaces(&cli);
         }
-        Some(Command::List(args)) => {
-            cmd::list::list_interfaces(&cli, args);
+        Some(Command::Ifaces(args)) => {
+            cmd::ifaces::list_interfaces(&cli, args);
         }
-        Some(Command::Show(args)) => {
-            cmd::show::show_interface(&cli, args);
+        Some(Command::Iface(args)) => {
+            cmd::iface::show_interface(&cli, args);
         }
-        Some(Command::Os) => {
-            cmd::os::show_system_net_stack(&cli);
+        Some(Command::System) => {
+            cmd::system::show_system_net_stack(&cli);
         }
         Some(Command::Monitor(args)) => {
             cmd::monitor::monitor_interfaces(&cli, args)?;

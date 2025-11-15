@@ -36,13 +36,13 @@ pub enum OutputFormat {
 #[derive(Debug, Subcommand)]
 pub enum Command {
     /// Show all interfaces
-    List(ListArgs),
+    Ifaces(IfacesArgs),
     /// Show details for specified interface
-    Show(ShowArgs),
+    Iface(IfaceArgs),
     /// Monitor traffic statistics for all interfaces
     Monitor(MonitorArgs),
     /// Show OS/network stack/permission information
-    Os,
+    System,
     /// Show public IP information
     Public(PublicArgs),
     /// Show routing tables (IPv4/IPv6)
@@ -53,9 +53,9 @@ pub enum Command {
     Socket(SocketArgs),
 }
 
-/// List command arguments
+/// Ifaces command arguments
 #[derive(Args, Debug)]
-pub struct ListArgs {
+pub struct IfacesArgs {
     /// Filter by name (supports partial match)
     #[arg(long)]
     pub name_like: Option<String>,
@@ -88,9 +88,9 @@ pub struct ListArgs {
     pub output: Option<PathBuf>,
 }
 
-/// Show command arguments
+/// Iface command arguments
 #[derive(Args, Debug)]
-pub struct ShowArgs {
+pub struct IfaceArgs {
     /// Show details for specified interface
     pub iface: String,
     /// Output format
