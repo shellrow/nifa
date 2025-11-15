@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::net::IpAddr;
 
 use anyhow::Result;
@@ -8,32 +9,42 @@ use crate::net::neigh;
 use crate::renderer::table::make_table;
 use termtree::Tree;
 use crate::renderer::tree::tree_label;
+use netdev::NetworkDevice;
 
 pub fn show_neigh(_cli: &Cli, args: &NeighArgs) -> Result<()> {
-    let table = neigh::get_neighbor_table()?; // HashMap<IpAddr, MacAddr>
-
-    if args.export {
-        crate::fs::export(
-            args.format,
-            args.output.as_deref(),
-            &table,
-        ).unwrap_or_else(|e| {
-            tracing::error!("Export failed: {}", e);
-        });
-    } else {
-        match args.format {
-            OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&table)?),
-            OutputFormat::Yaml => println!("{}", serde_yaml::to_string(&table)?),
-            OutputFormat::Table => {
-                print_neigh_table(&table);
-            }
-            OutputFormat::Tree => {
-                print_neigh_tree(&table);
+    let table: HashMap<IpAddr, MacAddr> = neigh::get_neighbor_table()?;
+    match args.export {
+        Some(export_format) => {
+            let devices = map_to_devices(table);
+            crate::fs::export(
+                export_format,
+                args.output.as_deref(),
+                &devices,
+            )?;
+            return Ok(());
+        }
+        None => {
+            match args.format {
+                OutputFormat::Tree => print_neigh_tree(&table),
+                OutputFormat::Table => print_neigh_table(&table),
+                OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&table)?),
+                OutputFormat::Yaml => println!("{}", serde_yaml::to_string(&table)?),
             }
         }
     }
-    
     Ok(())
+}
+
+fn map_to_devices(map: HashMap<IpAddr, MacAddr>) -> Vec<NetworkDevice> {
+    map.into_iter().map(|(ip, mac)| {
+        let mut device = NetworkDevice::new();
+        device.mac_addr = mac;
+        match ip {
+            IpAddr::V4(v4) => device.ipv4.push(v4),
+            IpAddr::V6(v6) => device.ipv6.push(v6),
+        }
+        device
+    }).collect()
 }
 
 fn print_neigh_tree(table: &std::collections::HashMap<IpAddr, MacAddr>) {

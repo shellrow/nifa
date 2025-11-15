@@ -2,30 +2,44 @@ use netdev::Interface;
 use termtree::Tree;
 use url::Url;
 use mac_addr::MacAddr;
+use anyhow::Result;
 
 use crate::{cli::{Cli, SystemArgs}, db::oui::is_oui_db_initialized, net::sys::SysInfo, renderer::{fmt_bps, tree::tree_label}};
 
 /// Show system network stack details
-pub fn show_system_net_stack(_cli: &Cli, args: &SystemArgs) {
+pub fn show_system_net_stack(_cli: &Cli, args: &SystemArgs) -> Result<()> {
     let sys_info = crate::net::sys::system_info();
     let default_iface_opt = crate::net::iface::get_default_interface();
-    match args.format {
-        crate::cli::OutputFormat::Tree => {
-            print_system_with_default_iface(&sys_info, default_iface_opt)
+    match args.export {
+        Some(export_format) => {
+            crate::fs::export(
+                export_format,
+                args.output.as_deref(),
+                &sys_info,
+            )?;
+            return Ok(());
         }
-        crate::cli::OutputFormat::Json => {
-            crate::renderer::json::print_snapshot_json(&sys_info, default_iface_opt)
-        }
-        crate::cli::OutputFormat::Yaml => {
-            crate::renderer::yaml::print_snapshot_yaml(&sys_info, default_iface_opt)
-        }
-        _ => {
-            tracing::error!(
-                "Unsupported format for show system network stack: {:?}",
-                args.format
-            );
+        None => {
+            match args.format {
+                crate::cli::OutputFormat::Tree => {
+                    print_system_with_default_iface(&sys_info, default_iface_opt)
+                }
+                crate::cli::OutputFormat::Json => {
+                    crate::renderer::json::print_snapshot_json(&sys_info, default_iface_opt)
+                }
+                crate::cli::OutputFormat::Yaml => {
+                    crate::renderer::yaml::print_snapshot_yaml(&sys_info, default_iface_opt)
+                }
+                _ => {
+                    tracing::error!(
+                        "Unsupported format for show system network stack: {:?}",
+                        args.format
+                    );
+                }
+            }
         }
     }
+    Ok(())
 }
 
 /// Mask username/password in proxy URL for privacy

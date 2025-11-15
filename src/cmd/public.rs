@@ -55,19 +55,21 @@ pub async fn show_public_ip_info(_cli: &Cli, args: &PublicArgs) -> Result<()> {
 
     let default_iface_opt = crate::net::iface::get_default_interface();
 
-    if args.export {
-        crate::fs::export(
-            args.format,
-            args.output.as_deref(),
-            &out,
-        ).unwrap_or_else(|e| {
-            tracing::error!("Export failed: {}", e);
-        });
-    } else {
-        match args.format {
-            OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&out)?),
-            OutputFormat::Yaml => println!("{}", serde_yaml::to_string(&out)?),
-            _ => print_public_ip_tree(&out, default_iface_opt),
+    match args.export {
+        Some(export_date) => {
+            crate::fs::export(
+                export_date,
+                args.output.as_deref(),
+                &out,
+            )?;
+            return Ok(());
+        }
+        None => {
+            match args.format {
+                OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&out)?),
+                OutputFormat::Yaml => println!("{}", serde_yaml::to_string(&out)?),
+                _ => print_public_ip_tree(&out, default_iface_opt),
+            }
         }
     }
     Ok(())

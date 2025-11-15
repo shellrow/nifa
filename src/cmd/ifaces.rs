@@ -1,3 +1,4 @@
+use anyhow::Result;
 use crate::cli::Cli;
 use crate::cli::IfacesArgs;
 use crate::db::oui::is_oui_db_initialized;
@@ -10,7 +11,7 @@ use netdev::Interface;
 use netdev::interface::state::OperState;
 use termtree::Tree;
 
-pub fn list_interfaces(_cli: &Cli, args: &IfacesArgs) {
+pub fn list_interfaces(_cli: &Cli, args: &IfacesArgs) -> Result<()> {
     let mut interfaces: Vec<Interface> = net::iface::get_all_interfaces();
 
     // Apply filters
@@ -36,23 +37,27 @@ pub fn list_interfaces(_cli: &Cli, args: &IfacesArgs) {
         interfaces.retain(|iface| !iface.ipv6.is_empty());
     }
 
-    if args.export {
-        crate::fs::export(
-            args.format,
-            args.output.as_deref(),
-            &interfaces,
-        ).unwrap_or_else(|e| {
-            tracing::error!("Export failed: {}", e);
-        });
-    }else{
-        // Render output
-        match args.format {
-            crate::cli::OutputFormat::Tree => print_interface_tree(&interfaces),
-            crate::cli::OutputFormat::Json => renderer::json::print_interface_json(&interfaces),
-            crate::cli::OutputFormat::Yaml => renderer::yaml::print_interface_yaml(&interfaces),
-            crate::cli::OutputFormat::Table => print_interface_table(&interfaces),
+    match args.export {
+        Some(export_format) => {
+            // Export to file in specified format
+            crate::fs::export(
+                export_format,
+                args.output.as_deref(),
+                &interfaces,
+            )?;
+            return Ok(());
+        }
+        None => {
+            // Render output
+            match args.format {
+                crate::cli::OutputFormat::Tree => print_interface_tree(&interfaces),
+                crate::cli::OutputFormat::Json => renderer::json::print_interface_json(&interfaces),
+                crate::cli::OutputFormat::Yaml => renderer::yaml::print_interface_yaml(&interfaces),
+                crate::cli::OutputFormat::Table => print_interface_table(&interfaces),
+            }
         }
     }
+    Ok(())
 }
 
 /// Print the network interfaces in a tree structure.

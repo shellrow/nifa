@@ -23,13 +23,13 @@ async fn main() -> Result<()> {
             cmd::iface::show_default_interface(&cli)?;
         }
         Some(Command::Ifaces(args)) => {
-            cmd::ifaces::list_interfaces(&cli, args);
+            cmd::ifaces::list_interfaces(&cli, args)?;
         }
         Some(Command::Iface(args)) => {
-            cmd::iface::show_interface(&cli, args);
+            cmd::iface::show_interface(&cli, args)?;
         }
         Some(Command::System(args)) => {
-            cmd::system::show_system_net_stack(&cli, args);
+            cmd::system::show_system_net_stack(&cli, args)?;
         }
         Some(Command::Monitor(args)) => {
             cmd::monitor::monitor_interfaces(&cli, args)?;

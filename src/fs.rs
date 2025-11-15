@@ -2,23 +2,16 @@ use anyhow::{Context, Result};
 use serde::Serialize;
 use std::{fs, io::Write, path::Path};
 
-use crate::cli::OutputFormat;
+use crate::cli::ExportFormat;
 
 pub fn export<T: Serialize>(
-    format: OutputFormat,
+    format: ExportFormat,
     output: Option<&Path>,
     data: &T,
 ) -> Result<()> {
     let (bytes, ext_default) = match format {
-        OutputFormat::Json => (serde_json::to_vec_pretty(data)?, "json"),
-        OutputFormat::Yaml => (serde_yaml::to_string(data)?.into_bytes(), "yaml"),
-        other => {
-            tracing::warn!(
-                "note: --export with {:?} is not supported; falling back to JSON.",
-                other
-            );
-            (serde_json::to_vec_pretty(data)?, "json")
-        }
+        ExportFormat::Json => (serde_json::to_vec_pretty(data)?, "json"),
+        ExportFormat::Yaml => (serde_yaml::to_string(data)?.into_bytes(), "yaml"),
     };
 
     if let Some(path) = output {

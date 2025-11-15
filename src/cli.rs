@@ -25,6 +25,12 @@ pub enum OutputFormat {
     Yaml,
 }
 
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub enum ExportFormat {
+    Json,
+    Yaml,
+}
+
 #[derive(Debug, Subcommand)]
 pub enum Command {
     /// Show all interfaces
@@ -72,9 +78,9 @@ pub struct IfacesArgs {
     /// Output format
     #[arg(short='f', long, value_enum, default_value_t = OutputFormat::Tree)]
     pub format: OutputFormat,
-    /// Export data (JSON/YAML only)
-    #[arg(long, default_value_t = false)]
-    pub export: bool,
+    /// Export data instead of printing to stdout
+    #[arg(long, value_enum)]
+    pub export: Option<ExportFormat>,
     /// Output file for export
     #[arg(long)]
     pub output: Option<PathBuf>,
@@ -88,9 +94,9 @@ pub struct IfaceArgs {
     /// Output format
     #[arg(short='f', long, value_enum, default_value_t = OutputFormat::Tree)]
     pub format: OutputFormat,
-    /// Export data (JSON/YAML only)
-    #[arg(long, default_value_t = false)]
-    pub export: bool,
+    /// Export data instead of printing to stdout
+    #[arg(long, value_enum)]
+    pub export: Option<ExportFormat>,
     /// Output file for export
     #[arg(long)]
     pub output: Option<PathBuf>,
@@ -119,9 +125,9 @@ pub struct SystemArgs {
     /// Output format
     #[arg(short='f', long, value_enum, default_value_t = OutputFormat::Tree)]
     pub format: OutputFormat,
-    /// Export data (JSON/YAML only)
-    #[arg(long, default_value_t = false)]
-    pub export: bool,
+    /// Export data instead of printing to stdout
+    #[arg(long, value_enum)]
+    pub export: Option<ExportFormat>,
     /// Output file for export
     #[arg(long)]
     pub output: Option<PathBuf>,
@@ -138,9 +144,9 @@ pub struct PublicArgs {
     /// Output format
     #[arg(short='f', long, value_enum, default_value_t = OutputFormat::Tree)]
     pub format: OutputFormat,
-    /// Export data (JSON/YAML only)
-    #[arg(long, default_value_t = false)]
-    pub export: bool,
+    /// Export data instead of printing to stdout
+    #[arg(long, value_enum)]
+    pub export: Option<ExportFormat>,
     /// Output file for export
     #[arg(long)]
     pub output: Option<PathBuf>,
@@ -157,9 +163,9 @@ pub struct RouteArgs {
     /// Output format
     #[arg(short='f', long, value_enum, default_value_t = OutputFormat::Tree)]
     pub format: OutputFormat,
-    /// Export data (JSON/YAML only)
-    #[arg(long, default_value_t = false)]
-    pub export: bool,
+    /// Export data instead of printing to stdout
+    #[arg(long, value_enum)]
+    pub export: Option<ExportFormat>,
     /// Output file for export
     #[arg(long)]
     pub output: Option<PathBuf>,
@@ -170,9 +176,9 @@ pub struct NeighArgs {
     /// Output format
     #[arg(short='f', long, value_enum, default_value_t = OutputFormat::Tree)]
     pub format: OutputFormat,
-    /// Export data (JSON/YAML only)
-    #[arg(long, default_value_t = false)]
-    pub export: bool,
+    /// Export data instead of printing to stdout
+    #[arg(long, value_enum)]
+    pub export: Option<ExportFormat>,
     /// Output file for export
     #[arg(long)]
     pub output: Option<PathBuf>,
@@ -218,9 +224,9 @@ pub struct SocketArgs {
     #[arg(short='f', long, value_enum, default_value_t = OutputFormat::Tree)]
     pub format: OutputFormat,
 
-    /// Export in json/yaml
-    #[arg(long, default_value_t = false)]
-    pub export: bool,
+    /// Export data instead of printing to stdout
+    #[arg(long, value_enum)]
+    pub export: Option<ExportFormat>,
 
     /// Output file for export
     #[arg(long)]

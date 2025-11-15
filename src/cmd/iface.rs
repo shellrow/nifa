@@ -25,30 +25,31 @@ pub fn show_default_interface(_cli: &Cli) -> Result<()> {
 }
 
 /// Show specified interface details
-pub fn show_interface(_cli: &Cli, args: &IfaceArgs) {
+pub fn show_interface(_cli: &Cli, args: &IfaceArgs) -> Result<()> {
     match net::iface::get_interface_by_name(&args.iface) {
         Some(iface) => {
-            if args.export {
-                crate::fs::export(
-                    args.format,
-                    args.output.as_deref(),
-                    &iface,
-                ).unwrap_or_else(|e| {
-                    tracing::error!("Export failed: {}", e);
-                });
-            } else {
-                // Render output
-                match args.format {
-                    crate::cli::OutputFormat::Tree => {
-                        print_interface_detail_tree(&iface)
-                    }
-                    crate::cli::OutputFormat::Json => renderer::json::print_interface_json(&[iface]),
-                    crate::cli::OutputFormat::Yaml => renderer::yaml::print_interface_yaml(&[iface]),
-                    _ => {
-                        tracing::error!(
-                            "Unsupported format for show interface: {:?}",
-                            args.format
-                        );
+            match args.export {
+                Some(export_format) => {
+                    // Export to file in specified format
+                    crate::fs::export(
+                        export_format,
+                        args.output.as_deref(),
+                        &iface,
+                    )?;
+                    return Ok(());
+                }
+                None => {
+                    // Render output
+                    match args.format {
+                        crate::cli::OutputFormat::Tree => print_interface_detail_tree(&iface),
+                        crate::cli::OutputFormat::Json => renderer::json::print_interface_json(&[iface]),
+                        crate::cli::OutputFormat::Yaml => renderer::yaml::print_interface_yaml(&[iface]),
+                        _ => {
+                            tracing::error!(
+                                "Unsupported format for show interface: {:?}",
+                                args.format
+                            );
+                        }
                     }
                 }
             }
@@ -57,6 +58,7 @@ pub fn show_interface(_cli: &Cli, args: &IfaceArgs) {
             tracing::error!("Interface '{}' not found", args.iface);
         }
     }
+    Ok(())
 }
 
 /// Print detailed information of a single interface in a tree structure.

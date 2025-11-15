@@ -16,31 +16,24 @@ pub fn show_route(_cli: &Cli, args: &RouteArgs) -> Result<()> {
         RouteFamilyOpt::Ipv6 => r.family == RouteFamily::Ipv6,
     });
 
-    if args.export {
-        crate::fs::export(
-            args.format,
-            args.output.as_deref(),
-            &routes,
-        ).unwrap_or_else(|e| {
-            tracing::error!("Export failed: {}", e);
-        });
-    } else {
-        match args.format {
-            OutputFormat::Json => {
-                println!("{}", serde_json::to_string_pretty(&routes)?);
-            }
-            OutputFormat::Yaml => {
-                println!("{}", serde_yaml::to_string(&routes)?);
-            }
-            OutputFormat::Table => {
-                print_route_table(&routes);
-            }
-            OutputFormat::Tree => {
-                print_route_tree(&routes);
+    match args.export {
+        Some(export_format) => {
+            crate::fs::export(
+                export_format,
+                args.output.as_deref(),
+                &routes,
+            )?;
+            return Ok(());
+        }
+        None => {
+            match args.format {
+                OutputFormat::Tree => print_route_tree(&routes),
+                OutputFormat::Table => print_route_table(&routes),
+                OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&routes)?),
+                OutputFormat::Yaml => println!("{}", serde_yaml::to_string(&routes)?),
             }
         }
     }
-    
     Ok(())
 }
 

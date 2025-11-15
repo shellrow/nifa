@@ -51,17 +51,24 @@ pub fn show_sockets(_cli: &Cli, args: &SocketArgs) -> Result<()> {
         });
     }
 
-    if args.export {
-        export(args.format, args.output.as_deref(), &socks)?;
+    match args.export {
+        Some(export_format) => {
+            export(
+                export_format,
+                args.output.as_deref(),
+                &socks,
+            )?;
+            return Ok(());
+        }
+        None => {
+            match args.format {
+                OutputFormat::Tree => print_socket_tree(&socks),
+                OutputFormat::Table => print_socket_table(&socks),
+                OutputFormat::Json => crate::renderer::json::pretty_print_json(&socks)?,
+                OutputFormat::Yaml => crate::renderer::yaml::print_yaml(&socks)?,
+            }
+        }
     }
-
-    match args.format {
-        OutputFormat::Tree => print_socket_tree(&socks),
-        OutputFormat::Table => print_socket_table(&socks),
-        OutputFormat::Json => crate::renderer::json::pretty_print_json(&socks)?,
-        OutputFormat::Yaml => crate::renderer::yaml::print_yaml(&socks)?,
-    }
-
     Ok(())
 }
 
