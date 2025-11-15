@@ -3,15 +3,18 @@
 [license-badge]: https://img.shields.io/crates/l/nifa.svg
 
 # nifa [![Crates.io][crates-badge]][crates-url] ![License][license-badge]
-Cross-platform network inspection tool
+Cross-platform network inspection tool - a modern, read-only alternative to classic network commands.
 
 ## Features
 - List all network interfaces with detailed information
-- Show complete details of a specific interface
-- Monitor live traffic statistics in TUI
-- Export snapshot in JSON or YAML for automation
+- Inspect a specific interface with full metadata (addresses, DNS, gateway, speeds, flags, stats)
+- View routing tables (IPv4/IPv6)
+- View neighbor table (ARP/NDP) with optional vendor (OUI) lookup
+- Inspect open TCP/UDP sockets with process association
+- Monitor live per-interface traffic statistics in a TUI
 - Fetch your public IPv4/IPv6
-- Display system information along with default interface
+- Display OS, kernel, proxy, permission capabilities, and default interface info
+- Export view as JSON/YAML for automation
 
 ## Supported Platforms
 - **Linux**
@@ -33,7 +36,7 @@ powershell -ExecutionPolicy Bypass -c "irm https://github.com/shellrow/nifa/rele
 ```
 
 ### From Releases
-You can download archives of precompiled binaries from the [releases](https://github.com/shellrow/nifa/releases) 
+You can download precompiled binaries from the [releases](https://github.com/shellrow/nifa/releases) 
 
 ### Using Cargo
 
@@ -46,24 +49,24 @@ cargo install nifa
 Usage: nifa [OPTIONS] [COMMAND]
 
 Commands:
-  list     Show all interfaces
-  show     Show details for specified interface
-  monitor  Monitor traffic statistics for all interfaces
-  os       Show OS/network stack/permission information
-  export   Export snapshot as JSON/YAML
+  ifaces   Show all interfaces
+  iface    Show details for specified interface
+  monitor  Monitor traffic statistics for interfaces in TUI
+  route    Show routing tables (IPv4/IPv6)
+  neigh    Show neighbor table (ARP/NDP)
+  socket   Show open TCP/UDP sockets and associated processes
   public   Show public IP information
+  system   Show OS / kernel / proxy / default interface
   help     Print this message or the help of the given subcommand(s)
 
 Options:
-  -d, --default          Show only default interface
-  -f, --format <FORMAT>  Output format [default: tree] [possible values: tree, json, yaml]
-      --with-vendor      With vendor info (OUI lookup)
-  -h, --help             Print help
-  -V, --version          Print version
+  -l, --log-level <LOG_LEVEL>  Set log level [default: error] [possible values: error, warn, info, debug, trace]
+  -h, --help                   Print help
+  -V, --version                Print version
 ```
 
 See `nifa <sub-command> -h` for more detail.
 
 ## Note for Developers
 If you are looking for a Rust library for network interface,
-please check out [netdev](https://github.com/shellrow/netdev).
+consider using [netdev](https://github.com/shellrow/netdev).
