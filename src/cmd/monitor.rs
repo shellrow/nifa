@@ -52,13 +52,13 @@ impl SortKey {
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
 pub enum Unit {
-    Bytes,
     Bits,
+    Bytes,
 }
 
 impl Default for Unit {
     fn default() -> Self {
-        Unit::Bytes
+        Unit::Bits
     }
 }
 
@@ -80,6 +80,9 @@ struct RowData {
     index: u32,
     name: String,
     friendly_name: Option<String>,
+    state: String,
+    mac_addr: Option<String>,
+    ipv4_addr: Option<String>,
     total: u64,
     total_tx: u64,
     total_rx: u64,
@@ -227,6 +230,9 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                             index: itf.index,
                             name: itf.name.clone(),
                             friendly_name: itf.friendly_name.clone(),
+                            state: itf.oper_state.as_str().to_string(),
+                            mac_addr: itf.mac_addr.as_ref().map(|m| m.to_string()),
+                            ipv4_addr: itf.ipv4.first().map(|n| n.addr().to_string()),
                             total_rx: st.rx_bytes,
                             total_tx: st.tx_bytes,
                             total: st.rx_bytes + st.tx_bytes,
@@ -272,7 +278,9 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
 
                 let header = Row::new(vec![
                     Span::styled("IFACE", Style::default().add_modifier(Modifier::BOLD)),
-                    Span::styled("Total", Style::default().add_modifier(Modifier::BOLD)),
+                    Span::styled("STATE", Style::default().add_modifier(Modifier::BOLD)),
+                    Span::styled("MAC", Style::default().add_modifier(Modifier::BOLD)),
+                    Span::styled("IPv4", Style::default().add_modifier(Modifier::BOLD)),
                     Span::styled("Total RX", Style::default().add_modifier(Modifier::BOLD)),
                     Span::styled("Total TX", Style::default().add_modifier(Modifier::BOLD)),
                     Span::styled("RX/s", Style::default().add_modifier(Modifier::BOLD)),
@@ -282,9 +290,11 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                 let rows_iter = rows_cache.iter().enumerate().map(|(i, r)| {
                     let base = Row::new(vec![
                         Span::raw(platform_if_name(r)),
-                        Span::raw(human_total(r.total, args.unit)),
-                        Span::raw(human_total(r.total_rx, args.unit)),
-                        Span::raw(human_total(r.total_tx, args.unit)),
+                        Span::raw(r.state.clone()),
+                        Span::raw(r.mac_addr.clone().unwrap_or_default()),
+                        Span::raw(r.ipv4_addr.clone().unwrap_or_default()),
+                        Span::raw(human_total(r.total_rx, Unit::Bytes)),
+                        Span::raw(human_total(r.total_tx, Unit::Bytes)),
                         Span::raw(human_rate(r.rx, args.unit)),
                         Span::raw(human_rate(r.tx, args.unit)),
                     ]);
@@ -298,11 +308,13 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                 // Table
                 let table = Table::new(rows_iter, [
                         Constraint::Length(max_name_len),
+                        Constraint::Length(8),
+                        Constraint::Length(18),
                         Constraint::Length(14),
-                        Constraint::Length(14),
-                        Constraint::Length(14),
-                        Constraint::Length(14),
-                        Constraint::Length(14),
+                        Constraint::Length(12),
+                        Constraint::Length(12),
+                        Constraint::Length(12),
+                        Constraint::Length(12),
                     ])
                     .header(header)
                     .block(Block::default().borders(Borders::ALL).title(title))

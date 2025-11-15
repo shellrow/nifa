@@ -109,7 +109,7 @@ pub struct MonitorArgs {
     #[arg(short = 'd', long, default_value = "1")]
     pub interval: u64,
     /// Display unit (bytes or bits)
-    #[arg(long, value_enum, default_value_t=Unit::Bytes)]
+    #[arg(long, value_enum, default_value_t=Unit::default())]
     pub unit: Unit,
 }
 
