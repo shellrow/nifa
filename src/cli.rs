@@ -59,16 +59,16 @@ pub enum Command {
     Iface(IfaceArgs),
     /// Monitor traffic statistics for interfaces in TUI
     Monitor(MonitorArgs),
-    /// Show OS / kernel / proxy / default interface
-    System(SystemArgs),
-    /// Show public IP information
-    Public(PublicArgs),
     /// Show routing tables (IPv4/IPv6)
     Route(RouteArgs),
     /// Show neighbor table (ARP/NDP)
     Neigh(NeighArgs),
     /// Show open TCP/UDP sockets and associated processes
     Socket(SocketArgs),
+    /// Show public IP information
+    Public(PublicArgs),
+    /// Show OS / kernel / proxy / default interface
+    System(SystemArgs),
 }
 
 /// Ifaces command arguments
