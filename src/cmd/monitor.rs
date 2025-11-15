@@ -272,7 +272,7 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                 // Header
                 let unit_label = match args.unit { Unit::Bytes => "bytes", Unit::Bits => "bits" };
                 let title = format!(
-                    "nifa monitor — sort:{:?} — unit:{} — interval:{}s {}",
+                    "nifa monitor - sort:{:?} - unit:{} - interval:{}s {}",
                     sort, unit_label, args.interval, target_iface.as_deref().unwrap_or("(all)")
                 );
 
@@ -349,7 +349,7 @@ pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
                         // Render the modal body
                         let block = Block::default()
                             .title(format!(
-                                "Details: {} (Esc to close — ↑/↓/w/s scroll)",
+                                "Details: {} (Esc to close - ↑/↓/w/s scroll)",
                                 iface.name
                             ))
                             .borders(Borders::ALL)
