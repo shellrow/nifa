@@ -7,12 +7,16 @@ mod db;
 mod model;
 mod renderer;
 mod fs;
+mod log;
+mod time;
 
 use cli::{Cli, Command};
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
+
+    log::init_logger(&cli.log_level)?;
 
     match &cli.command {
         None => {

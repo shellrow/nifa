@@ -8,9 +8,33 @@ use crate::cmd::monitor::{SortKey, Unit};
 #[derive(Debug, Parser)]
 #[command(name = "nifa", author, version, about = "nifa - Cross-platform CLI tool for network information", long_about = None)]
 pub struct Cli {
+    /// Set log level
+    #[arg(short = 'l', long, value_enum, default_value_t = LogLevel::Error)]
+    pub log_level: LogLevel,
     /// Subcommand
     #[command(subcommand)]
     pub command: Option<Command>,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub enum LogLevel {
+    Error,
+    Warn,
+    Info,
+    Debug,
+    Trace,
+}
+
+impl LogLevel {
+    pub fn to_tracing_level(&self) -> tracing::Level {
+        match self {
+            LogLevel::Error => tracing::Level::ERROR,
+            LogLevel::Warn => tracing::Level::WARN,
+            LogLevel::Info => tracing::Level::INFO,
+            LogLevel::Debug => tracing::Level::DEBUG,
+            LogLevel::Trace => tracing::Level::TRACE,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
