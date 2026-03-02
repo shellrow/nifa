@@ -3,18 +3,22 @@
 [license-badge]: https://img.shields.io/crates/l/nifa.svg
 
 # nifa [![Crates.io][crates-badge]][crates-url] ![License][license-badge]
-Cross-platform network inspection tool - a modern, read-only alternative to classic network commands.
 
-## Features
-- List all network interfaces with detailed information
-- Inspect a specific interface with full metadata (addresses, DNS, gateway, speeds, flags, stats)
-- View routing tables (IPv4/IPv6)
-- View neighbor table (ARP/NDP) with optional vendor (OUI) lookup
-- Inspect open TCP/UDP sockets with process association
-- Monitor live per-interface traffic statistics in a TUI
-- Fetch your public IPv4/IPv6
-- Display OS, kernel, proxy, permission capabilities, and default interface info
-- Export view as JSON/YAML for automation
+Cross-platform network inspection tool.
+
+It is designed for Linux, macOS, and Windows with a consistent command surface:
+
+```bash
+nifa <sub-command> [options]
+```
+
+With no sub-command (`nifa`), it shows the primary network interface summary.
+
+## Principles
+
+- Read-only only: no mutation commands
+- Tree-first output with terminal-width-aware auto format
+- Structured output for automation (`json` / `yaml`)
 
 ## Supported Platforms
 - **Linux**
@@ -44,29 +48,69 @@ You can download precompiled binaries from the [releases](https://github.com/she
 cargo install nifa
 ```
 
-## Usage
-```
-Usage: nifa [OPTIONS] [COMMAND]
+## Commands
 
-Commands:
-  ifaces   Show all interfaces
-  iface    Show details for specified interface
-  monitor  Monitor traffic statistics for interfaces in TUI
-  route    Show routing tables (IPv4/IPv6)
-  neigh    Show neighbor table (ARP/NDP)
-  socket   Show open TCP/UDP sockets and associated processes
-  public   Show public IP information
-  system   Show OS / kernel / proxy / default interface
-  help     Print this message or the help of the given subcommand(s)
-
-Options:
-  -l, --log-level <LOG_LEVEL>  Set log level [default: error] [possible values: error, warn, info, debug, trace]
-  -h, --help                   Print help
-  -V, --version                Print version
+```text
+if      Network interfaces
+addr    IP addresses
+link    Layer 2 information
+route   Routing table
+neigh   ARP / NDP entries
+sock    Sockets (ss/netstat equivalent)
+sys     Network/system summary
+mon     TUI monitor
 ```
 
-See `nifa <sub-command> -h` for more detail.
+## Output Options
 
-## Note for Developers
-If you are looking for a Rust library for network interface,
-consider using [netdev](https://github.com/shellrow/netdev).
+All non-TUI commands support:
+
+```text
+--format auto|tree|table|json|yaml
+--wide
+--no-color
+--no-truncate
+```
+
+### Format behavior
+
+- Default: `auto`
+- `auto` selects:
+  - narrow terminal: `tree`
+  - wide terminal: `table`
+
+## Examples
+
+```bash
+# Interfaces (summary)
+nifa if
+
+# Interface details
+nifa if show en0
+
+# Addresses
+nifa addr
+nifa addr --iface en0 --ipv6
+
+# Link layer
+nifa link --up
+
+# Routes
+nifa route --default
+nifa route --ipv4 --detail
+
+# Neighbors
+nifa neigh --ipv4 --vendor
+
+# Sockets
+nifa sock --proto tcp --listen
+nifa sock --proto tcp --established --pid
+
+# System summary
+nifa sys
+nifa sys --dns
+nifa sys --proxy
+
+# TUI monitor
+nifa mon --iface en0 --interval 1 --sort total
+```

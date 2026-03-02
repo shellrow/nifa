@@ -25,10 +25,58 @@ pub fn get_all_interfaces() -> Vec<Interface> {
 }
 
 pub fn get_default_interface() -> Option<Interface> {
-    match netdev::get_default_interface() {
-        Ok(iface) => Some(iface),
-        Err(_) => None,
+    netdev::get_default_interface().ok()
+}
+
+/// Return a practical primary interface with fallback.
+/// Priority: OS default -> default-flagged non-loopback -> UP non-loopback -> first non-loopback -> first any.
+pub fn get_primary_interface() -> Option<Interface> {
+    if let Some(iface) = get_default_interface() {
+        if iface.if_type != InterfaceType::Loopback {
+            return Some(iface);
+        }
     }
+
+    let mut all = get_all_interfaces();
+    all.sort_by(|a, b| a.index.cmp(&b.index));
+
+    all.iter()
+        .find(|i| i.default && i.if_type != InterfaceType::Loopback)
+        .cloned()
+        .or_else(|| {
+            all.iter()
+                .find(|i| {
+                    i.oper_state == netdev::interface::state::OperState::Up
+                        && i.if_type != InterfaceType::Loopback
+                        && i.gateway
+                            .as_ref()
+                            .is_some_and(|gw| !gw.ipv4.is_empty() || !gw.ipv6.is_empty())
+                })
+                .cloned()
+        })
+        .or_else(|| {
+            all.iter()
+                .find(|i| {
+                    i.oper_state == netdev::interface::state::OperState::Up
+                        && i.if_type != InterfaceType::Loopback
+                        && (!i.dns_servers.is_empty() || !i.ipv4.is_empty())
+                })
+                .cloned()
+        })
+        .or_else(|| {
+            all.iter()
+                .find(|i| {
+                    i.oper_state == netdev::interface::state::OperState::Up
+                        && i.if_type != InterfaceType::Loopback
+                })
+                .cloned()
+        })
+        .or_else(|| {
+            all.iter()
+                .find(|i| i.if_type != InterfaceType::Loopback)
+                .cloned()
+        })
+        .or_else(|| all.into_iter().next())
 }
 
 pub fn get_interface_by_name(name: &str) -> Option<Interface> {

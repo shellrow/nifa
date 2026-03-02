@@ -23,10 +23,8 @@ use ratatui::{
 };
 use termtree::Tree;
 
-use crate::cli::Cli;
-use crate::cli::MonitorArgs;
+use crate::cli::MonArgs;
 use crate::net::iface::get_all_interfaces;
-use crate::renderer::tree::tree_label;
 use crate::renderer::{fmt_bps, fmt_flags};
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
@@ -90,7 +88,7 @@ struct RowData {
     tx: f64,
 }
 
-pub fn monitor_interfaces(_cli: &Cli, args: &MonitorArgs) -> Result<()> {
+pub fn monitor_interfaces(args: &MonArgs) -> Result<()> {
     // Settings
     let mut sort = args.sort;
     let target_iface = args.iface.clone(); // Option<String>
@@ -505,13 +503,11 @@ fn iface_to_text(iface: &netdev::Interface) -> String {
         if iface.default { " (default)" } else { "" },
         host
     );
-    let mut root = Tree::new(tree_label(title));
+    let mut root = Tree::new(title);
 
-    // flat fields (no General section)
     root.push(Tree::new(format!("Index: {}", iface.index)));
-
-    if let Some(fn_name) = &iface.friendly_name {
-        root.push(Tree::new(format!("Friendly Name: {}", fn_name)));
+    if let Some(name) = &iface.friendly_name {
+        root.push(Tree::new(format!("Friendly Name: {}", name)));
     }
     if let Some(desc) = &iface.description {
         root.push(Tree::new(format!("Description: {}", desc)));
@@ -519,7 +515,6 @@ fn iface_to_text(iface: &netdev::Interface) -> String {
 
     root.push(Tree::new(format!("Type: {:?}", iface.if_type)));
     root.push(Tree::new(format!("State: {:?}", iface.oper_state)));
-
     if let Some(mac) = &iface.mac_addr {
         root.push(Tree::new(format!("MAC: {}", mac)));
     }
@@ -527,9 +522,8 @@ fn iface_to_text(iface: &netdev::Interface) -> String {
         root.push(Tree::new(format!("MTU: {}", mtu)));
     }
 
-    // link speeds (humanized bps)
     if iface.transmit_speed.is_some() || iface.receive_speed.is_some() {
-        let mut speed = Tree::new(tree_label("Link Speed"));
+        let mut speed = Tree::new("Link Speed".to_string());
         if let Some(tx) = iface.transmit_speed {
             speed.push(Tree::new(format!("TX: {}", fmt_bps(tx))));
         }
@@ -539,68 +533,62 @@ fn iface_to_text(iface: &netdev::Interface) -> String {
         root.push(speed);
     }
 
-    // flags
     root.push(Tree::new(format!("Flags: {}", fmt_flags(iface.flags))));
 
-    // ---- Addresses ----
     if !iface.ipv4.is_empty() {
-        let mut ipv4_tree = Tree::new(tree_label("IPv4"));
+        let mut ipv4 = Tree::new("IPv4".to_string());
         for net in &iface.ipv4 {
-            ipv4_tree.push(Tree::new(net.to_string()));
+            ipv4.push(Tree::new(net.to_string()));
         }
-        root.push(ipv4_tree);
+        root.push(ipv4);
     }
 
     if !iface.ipv6.is_empty() {
-        let mut ipv6_tree = Tree::new(tree_label("IPv6"));
+        let mut ipv6 = Tree::new("IPv6".to_string());
         for (i, net) in iface.ipv6.iter().enumerate() {
             let mut label = net.to_string();
             if let Some(scope) = iface.ipv6_scope_ids.get(i) {
-                label.push_str(&format!(" (scope_id={})", scope));
+                label.push_str(&format!(" (scope_id={scope})"));
             }
-            ipv6_tree.push(Tree::new(label));
+            ipv6.push(Tree::new(label));
         }
-        root.push(ipv6_tree);
+        root.push(ipv6);
     }
 
-    // ---- DNS ----
     if !iface.dns_servers.is_empty() {
-        let mut dns_tree = Tree::new(tree_label("DNS"));
-        for dns in &iface.dns_servers {
-            dns_tree.push(Tree::new(dns.to_string()));
+        let mut dns = Tree::new("DNS".to_string());
+        for server in &iface.dns_servers {
+            dns.push(Tree::new(server.to_string()));
         }
-        root.push(dns_tree);
+        root.push(dns);
     }
 
-    // ---- Gateway ----
     if let Some(gw) = &iface.gateway {
-        let mut gw_node = Tree::new(tree_label("Gateway"));
-        gw_node.push(Tree::new(format!("MAC: {}", gw.mac_addr)));
+        let mut gateway = Tree::new("Gateway".to_string());
+        gateway.push(Tree::new(format!("MAC: {}", gw.mac_addr)));
         if !gw.ipv4.is_empty() {
-            let mut gw4 = Tree::new(tree_label("IPv4"));
+            let mut v4 = Tree::new("IPv4".to_string());
             for ip in &gw.ipv4 {
-                gw4.push(Tree::new(ip.to_string()));
+                v4.push(Tree::new(ip.to_string()));
             }
-            gw_node.push(gw4);
+            gateway.push(v4);
         }
         if !gw.ipv6.is_empty() {
-            let mut gw6 = Tree::new(tree_label("IPv6"));
+            let mut v6 = Tree::new("IPv6".to_string());
             for ip in &gw.ipv6 {
-                gw6.push(Tree::new(ip.to_string()));
+                v6.push(Tree::new(ip.to_string()));
             }
-            gw_node.push(gw6);
+            gateway.push(v6);
         }
-        root.push(gw_node);
+        root.push(gateway);
     }
 
-    // ---- Statistics (snapshot) ----
     if let Some(st) = &iface.stats {
-        let mut stats_node = Tree::new(tree_label("Statistics (snapshot)"));
-        stats_node.push(Tree::new(format!("RX bytes: {}", st.rx_bytes)));
-        stats_node.push(Tree::new(format!("TX bytes: {}", st.tx_bytes)));
-        root.push(stats_node);
+        let mut stats = Tree::new("Statistics".to_string());
+        stats.push(Tree::new(format!("RX bytes: {}", st.rx_bytes)));
+        stats.push(Tree::new(format!("TX bytes: {}", st.tx_bytes)));
+        root.push(stats);
     }
 
-    //println!("{}", root);
-    format!("{}", root)
+    format!("{root}")
 }

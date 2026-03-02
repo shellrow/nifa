@@ -1,9 +1,9 @@
 use anyhow::Result;
 use clap::Parser;
+
 mod cli;
 mod cmd;
 mod db;
-mod fs;
 mod log;
 mod model;
 mod net;
@@ -12,40 +12,23 @@ mod time;
 
 use cli::{Cli, Command};
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     let cli = Cli::parse();
-
     log::init_logger(&cli.log_level)?;
 
     match &cli.command {
+        Some(Command::If(args)) => cmd::ifc::run(args)?,
+        Some(Command::Addr(args)) => cmd::addr::run(args)?,
+        Some(Command::Link(args)) => cmd::link::run(args)?,
+        Some(Command::Route(args)) => cmd::route::run(args)?,
+        Some(Command::Neigh(args)) => cmd::neigh::run(args)?,
+        Some(Command::Sock(args)) => cmd::sock::run(args)?,
+        Some(Command::Sys(args)) => cmd::sys::run(args)?,
+        Some(Command::Mon(args)) => cmd::monitor::monitor_interfaces(args)?,
         None => {
-            cmd::iface::show_default_interface(&cli)?;
+            cmd::ifc::run_default_interface()?;
         }
-        Some(Command::Ifaces(args)) => {
-            cmd::ifaces::list_interfaces(&cli, args)?;
-        }
-        Some(Command::Iface(args)) => {
-            cmd::iface::show_interface(&cli, args)?;
-        }
-        Some(Command::System(args)) => {
-            cmd::system::show_system_net_stack(&cli, args)?;
-        }
-        Some(Command::Monitor(args)) => {
-            cmd::monitor::monitor_interfaces(&cli, args)?;
-        }
-        Some(Command::Public(args)) => {
-            cmd::public::show_public_ip_info(&cli, args).await?;
-        }
-        Some(Command::Route(args)) => {
-            cmd::route::show_route(&cli, args)?;
-        }
-        Some(Command::Neigh(args)) => {
-            cmd::neigh::show_neigh(&cli, args)?;
-        }
-        Some(Command::Socket(args)) => {
-            cmd::socket::show_sockets(&cli, args)?;
-        }
-    };
+    }
+
     Ok(())
 }
