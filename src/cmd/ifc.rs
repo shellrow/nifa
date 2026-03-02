@@ -2,7 +2,8 @@ use anyhow::Result;
 use netdev::interface::state::OperState;
 use termtree::Tree;
 
-use crate::cli::{IfArgs, OutputFormat, ShowAction};
+use crate::cli::IfArgs;
+use crate::cli::ShowAction;
 use crate::model::{IfDetail, IfSummary};
 use crate::renderer::fmt_flags;
 
@@ -25,11 +26,7 @@ pub fn run(args: &IfArgs) -> Result<()> {
                     .ok_or_else(|| anyhow::anyhow!("Interface '{target}' not found"))?
             };
             let detail: IfDetail = super::common::interface_to_detail(&iface, args.vendor);
-            let mut out = args.out.clone();
-            if matches!(out.format, OutputFormat::Auto) {
-                out.format = OutputFormat::Tree;
-            }
-            crate::renderer::render_if_detail(&detail, &out)
+            crate::renderer::render_if_detail(&detail, &args.out)
         }
         None => {
             let mut interfaces = crate::net::iface::get_all_interfaces();

@@ -32,14 +32,6 @@ pub fn resolve_output_format(out: &OutputArgs) -> ResolvedFormat {
         OutputFormat::Table => ResolvedFormat::Table,
         OutputFormat::Json => ResolvedFormat::Json,
         OutputFormat::Yaml => ResolvedFormat::Yaml,
-        OutputFormat::Auto => {
-            let width = crossterm::terminal::size().map(|(w, _)| w).unwrap_or(120);
-            if out.wide || width >= 110 {
-                ResolvedFormat::Table
-            } else {
-                ResolvedFormat::Tree
-            }
-        }
     }
 }
 

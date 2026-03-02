@@ -42,7 +42,6 @@ impl LogLevel {
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
 pub enum OutputFormat {
-    Auto,
     Tree,
     Table,
     Json,
@@ -52,7 +51,7 @@ pub enum OutputFormat {
 #[derive(Args, Debug, Clone)]
 pub struct OutputArgs {
     /// Output format
-    #[arg(long, value_enum, default_value_t = OutputFormat::Auto)]
+    #[arg(long, value_enum, default_value_t = OutputFormat::Tree)]
     pub format: OutputFormat,
     /// Prefer wider table layout
     #[arg(long, default_value_t = false)]

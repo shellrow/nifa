@@ -17,7 +17,7 @@ With no sub-command (`nifa`), it shows the primary network interface summary.
 ## Principles
 
 - Read-only only: no mutation commands
-- Tree-first output with terminal-width-aware auto format
+- Tree-first output (`tree` default)
 - Structured output for automation (`json` / `yaml`)
 
 ## Supported Platforms
@@ -66,7 +66,7 @@ mon     TUI monitor
 All non-TUI commands support:
 
 ```text
---format auto|tree|table|json|yaml
+--format tree|table|json|yaml
 --wide
 --no-color
 --no-truncate
@@ -74,10 +74,8 @@ All non-TUI commands support:
 
 ### Format behavior
 
-- Default: `auto`
-- `auto` selects:
-  - narrow terminal: `tree`
-  - wide terminal: `table`
+- Default: `tree`
+- Use `--format table` for tabular output
 
 ## Examples
 
