@@ -21,9 +21,9 @@ serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1" }
 serde_yaml = { version = "0.9" }
 mac-addr = { version = "0.3.0" }
-netdev = { version = "0.39", features = ["serde"] }
-netroute = { version = "0.3", features = ["serde"] }
-netsock = { version = "0.5", features = ["serde"] }
+netdev = { version = "0.40", features = ["serde"] }
+netroute = { version = "0.4", features = ["serde"] }
+netsock = { version = "0.6", features = ["serde"] }
 clap = { version = "4.5", features = ["derive", "cargo"] }
 termtree = { version = "0.5" }
 hostname = { version = "0.4" }
