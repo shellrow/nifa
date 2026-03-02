@@ -1,12 +1,15 @@
-use std::path::PathBuf;
-
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
 use crate::cmd::monitor::{SortKey, Unit};
 
 /// nifa - Cross-platform network inspection tool
 #[derive(Debug, Parser)]
-#[command(name = "nifa", author, version, about = "nifa - Cross-platform network inspection tool", long_about = None)]
+#[command(
+    name = "nifa",
+    author,
+    version,
+    about = "Cross-platform network inspection tool"
+)]
 pub struct Cli {
     /// Set log level
     #[arg(short = 'l', long, value_enum, default_value_t = LogLevel::Error)]
@@ -45,38 +48,53 @@ pub enum OutputFormat {
     Yaml,
 }
 
-#[derive(Debug, Clone, Copy, ValueEnum)]
-pub enum ExportFormat {
-    Json,
-    Yaml,
+#[derive(Args, Debug, Clone)]
+pub struct OutputArgs {
+    /// Output format
+    #[arg(long, value_enum, default_value_t = OutputFormat::Tree)]
+    pub format: OutputFormat,
+    /// Prefer wider table layout
+    #[arg(long, default_value_t = false)]
+    pub wide: bool,
+    /// Disable colored output
+    #[arg(long, default_value_t = false)]
+    pub no_color: bool,
+    /// Disable truncation in compact output
+    #[arg(long, default_value_t = false)]
+    pub no_truncate: bool,
 }
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
-    /// Show all interfaces
-    Ifaces(IfacesArgs),
-    /// Show details for specified interface
-    Iface(IfaceArgs),
-    /// Monitor traffic statistics for interfaces in TUI
-    Monitor(MonitorArgs),
-    /// Show routing tables (IPv4/IPv6)
+    /// Network interfaces
+    #[command(name = "if")]
+    If(IfArgs),
+    /// IP addresses
+    Addr(AddrArgs),
+    /// Layer 2 information
+    Link(LinkArgs),
+    /// Routing table
     Route(RouteArgs),
-    /// Show neighbor table (ARP/NDP)
+    /// ARP/NDP entries
     Neigh(NeighArgs),
-    /// Show open TCP/UDP sockets and associated processes
-    Socket(SocketArgs),
-    /// Show public IP information
-    Public(PublicArgs),
-    /// Show OS / kernel / proxy / default interface
-    System(SystemArgs),
+    /// Sockets (ss/netstat equivalent)
+    Sock(SockArgs),
+    /// Network/system summary
+    Sys(SysArgs),
+    /// TUI monitor
+    Mon(MonArgs),
 }
 
-/// Ifaces command arguments
+#[derive(Debug, Subcommand)]
+pub enum ShowAction {
+    /// Show details for a specific target
+    Show { target: String },
+}
+
 #[derive(Args, Debug)]
-pub struct IfacesArgs {
-    /// Filter by name (supports partial match)
-    #[arg(long)]
-    pub name_like: Option<String>,
+pub struct IfArgs {
+    #[command(subcommand)]
+    pub action: Option<ShowAction>,
     /// Show UP status interfaces only
     #[arg(long, conflicts_with = "down")]
     pub up: bool,
@@ -95,126 +113,79 @@ pub struct IfacesArgs {
     /// Show interfaces with IPv6 address only
     #[arg(long)]
     pub ipv6: bool,
-    /// Output format
-    #[arg(short='f', long, value_enum, default_value_t = OutputFormat::Tree)]
-    pub format: OutputFormat,
-    /// Export data instead of printing to stdout
-    #[arg(long, value_enum)]
-    pub export: Option<ExportFormat>,
-    /// Output file for export
-    #[arg(short = 'o', long)]
-    pub output: Option<PathBuf>,
-    /// With vendor info (OUI lookup)
+    /// Resolve vendor info using OUI DB
     #[arg(long, default_value_t = false)]
     pub vendor: bool,
-}
-
-/// Iface command arguments
-#[derive(Args, Debug)]
-pub struct IfaceArgs {
-    /// Show details for specified interface
-    pub iface: String,
-    /// Output format
-    #[arg(short='f', long, value_enum, default_value_t = OutputFormat::Tree)]
-    pub format: OutputFormat,
-    /// Export data instead of printing to stdout
-    #[arg(long, value_enum)]
-    pub export: Option<ExportFormat>,
-    /// Output file for export
-    #[arg(short = 'o', long)]
-    pub output: Option<PathBuf>,
-    /// With vendor info (OUI lookup)
-    #[arg(long, default_value_t = false)]
-    pub vendor: bool,
-}
-
-/// Monitor command arguments
-#[derive(Args, Debug)]
-pub struct MonitorArgs {
-    /// Target interface (default: all)
-    #[arg(short, long)]
-    pub iface: Option<String>,
-    /// Sort key
-    #[arg(short='s', long, value_enum, default_value_t=SortKey::Total)]
-    pub sort: SortKey,
-    /// Monitor interval in seconds
-    #[arg(short = 'd', long, default_value = "1")]
-    pub interval: u64,
-    /// Display unit (bytes or bits)
-    #[arg(long, value_enum, default_value_t=Unit::default())]
-    pub unit: Unit,
-}
-
-/// System command arguments
-#[derive(Args, Debug)]
-pub struct SystemArgs {
-    /// Output format
-    #[arg(short='f', long, value_enum, default_value_t = OutputFormat::Tree)]
-    pub format: OutputFormat,
-    /// Export data instead of printing to stdout
-    #[arg(long, value_enum)]
-    pub export: Option<ExportFormat>,
-    /// Output file for export
-    #[arg(short = 'o', long)]
-    pub output: Option<PathBuf>,
+    #[command(flatten)]
+    pub out: OutputArgs,
 }
 
 #[derive(Args, Debug)]
-pub struct PublicArgs {
-    /// IPv4 only
+pub struct AddrArgs {
+    #[command(subcommand)]
+    pub action: Option<ShowAction>,
+    /// Filter by interface name
     #[arg(long)]
+    pub iface: Option<String>,
+    /// Show IPv4 only
+    #[arg(long, conflicts_with = "ipv6")]
     pub ipv4: bool,
-    /// Timeout seconds
-    #[arg(long, default_value_t = 3)]
-    pub timeout: u64,
-    /// Output format
-    #[arg(short='f', long, value_enum, default_value_t = OutputFormat::Tree)]
-    pub format: OutputFormat,
-    /// Export data instead of printing to stdout
-    #[arg(long, value_enum)]
-    pub export: Option<ExportFormat>,
-    /// Output file for export
-    #[arg(short = 'o', long)]
-    pub output: Option<PathBuf>,
+    /// Show IPv6 only
+    #[arg(long)]
+    pub ipv6: bool,
+    #[command(flatten)]
+    pub out: OutputArgs,
 }
 
-#[derive(clap::ValueEnum, Clone, Copy, Debug)]
-pub enum RouteFamilyOpt {
-    All,
-    Ipv4,
-    Ipv6,
+#[derive(Args, Debug)]
+pub struct LinkArgs {
+    /// Filter by interface name
+    #[arg(long)]
+    pub iface: Option<String>,
+    /// Show UP status interfaces only
+    #[arg(long, conflicts_with = "down")]
+    pub up: bool,
+    /// Show DOWN status interfaces only
+    #[arg(long)]
+    pub down: bool,
+    #[command(flatten)]
+    pub out: OutputArgs,
 }
 
 #[derive(Args, Debug)]
 pub struct RouteArgs {
-    /// Family filter
-    #[arg(long, value_enum, default_value_t = RouteFamilyOpt::All)]
-    pub family: RouteFamilyOpt,
-    /// Output format
-    #[arg(short='f', long, value_enum, default_value_t = OutputFormat::Tree)]
-    pub format: OutputFormat,
-    /// Export data instead of printing to stdout
-    #[arg(long, value_enum)]
-    pub export: Option<ExportFormat>,
-    /// Output file for export
-    #[arg(short = 'o', long)]
-    pub output: Option<PathBuf>,
+    /// Show IPv4 routes only
+    #[arg(long, conflicts_with = "ipv6")]
+    pub ipv4: bool,
+    /// Show IPv6 routes only
+    #[arg(long)]
+    pub ipv6: bool,
+    /// Show default routes only
+    #[arg(long)]
+    pub default: bool,
+    /// Show detailed route metadata
+    #[arg(long, default_value_t = false)]
+    pub detail: bool,
+    #[command(flatten)]
+    pub out: OutputArgs,
 }
 
 #[derive(Args, Debug)]
 pub struct NeighArgs {
-    /// Output format
-    #[arg(short='f', long, value_enum, default_value_t = OutputFormat::Tree)]
-    pub format: OutputFormat,
-    /// Export data instead of printing to stdout
-    #[arg(long, value_enum)]
-    pub export: Option<ExportFormat>,
-    /// Output file for export
-    #[arg(short = 'o', long)]
-    pub output: Option<PathBuf>,
-    /// With vendor info (OUI lookup)
+    /// Filter by interface name (best-effort by platform support)
+    #[arg(long)]
+    pub iface: Option<String>,
+    /// Show IPv4 only
+    #[arg(long, conflicts_with = "ipv6")]
+    pub ipv4: bool,
+    /// Show IPv6 only
+    #[arg(long)]
+    pub ipv6: bool,
+    /// Resolve vendor info using OUI DB
     #[arg(long, default_value_t = false)]
     pub vendor: bool,
+    #[command(flatten)]
+    pub out: OutputArgs,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
@@ -232,29 +203,56 @@ pub enum SocketFamily {
 }
 
 #[derive(Args, Debug)]
-pub struct SocketArgs {
+pub struct SockArgs {
     /// Protocol filter
     #[arg(long, value_enum, default_value = "all")]
     pub proto: SocketProto,
     /// Address family filter
     #[arg(long, value_enum, default_value = "all")]
     pub family: SocketFamily,
-    /// TCP state filter (established, listen, time_wait, all)
+    /// Show listening sockets only
+    #[arg(long, conflicts_with = "established")]
+    pub listen: bool,
+    /// Show established sockets only
     #[arg(long)]
-    pub state: Option<String>,
+    pub established: bool,
     /// Filter by local or remote port
     #[arg(long)]
     pub port: Option<u16>,
-    /// Filter by PID
+    /// Include process ownership details
+    #[arg(long, default_value_t = false)]
+    pub pid: bool,
+    #[command(flatten)]
+    pub out: OutputArgs,
+}
+
+#[derive(Args, Debug)]
+pub struct SysArgs {
+    /// Emphasize DNS details
+    #[arg(long, default_value_t = false)]
+    pub dns: bool,
+    /// Emphasize proxy details
+    #[arg(long, default_value_t = false)]
+    pub proxy: bool,
+    /// Show summary-only output
+    #[arg(long, default_value_t = false)]
+    pub summary: bool,
+    #[command(flatten)]
+    pub out: OutputArgs,
+}
+
+#[derive(Args, Debug)]
+pub struct MonArgs {
+    /// Target interface (default: all)
     #[arg(long)]
-    pub pid: Option<u32>,
-    /// Output format
-    #[arg(short='f', long, value_enum, default_value_t = OutputFormat::Tree)]
-    pub format: OutputFormat,
-    /// Export data instead of printing to stdout
-    #[arg(long, value_enum)]
-    pub export: Option<ExportFormat>,
-    /// Output file for export
-    #[arg(short = 'o', long)]
-    pub output: Option<std::path::PathBuf>,
+    pub iface: Option<String>,
+    /// Monitor interval in seconds
+    #[arg(long, default_value = "1")]
+    pub interval: u64,
+    /// Sort key
+    #[arg(long, value_enum, default_value_t = SortKey::Total)]
+    pub sort: SortKey,
+    /// Display unit (bytes or bits)
+    #[arg(long, value_enum, default_value_t = Unit::default())]
+    pub unit: Unit,
 }

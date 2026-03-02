@@ -1,8 +1,9 @@
-pub mod iface;
-pub mod ifaces;
+pub mod addr;
+pub mod common;
+pub mod ifc;
+pub mod link;
 pub mod monitor;
 pub mod neigh;
-pub mod public;
 pub mod route;
-pub mod socket;
-pub mod system;
+pub mod sock;
+pub mod sys;
